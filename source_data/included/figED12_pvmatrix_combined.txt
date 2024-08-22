@@ -1,0 +1,53 @@
+	0	1	2	3	4	5
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_0	GO:0006412 translation	-0.000/-4.327	-1.700/-0.005	-6.072/-0.000	-0.180/-0.359	-0.000/-4.327
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_1	GO:0003723 RNA binding	-0.000/-3.375	-3.011/-0.000	-3.715/-0.000	-0.025/-1.021	-0.001/-2.494
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_2	GO:0030288 outer membrane-bounded periplasmic space	-5.952/-0.000	-0.544/-0.073	-0.001/-1.741	0.000/-2.636	-0.008/-1.152
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_3	GO:0030529 ribonucleoprotein complex	-0.001/-2.168	-2.799/-0.000	-2.030/-0.002	-0.235/-0.257	-0.000/-4.324
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_4	GO:0003735 structural constituent of ribosome	-0.004/-1.576	-2.613/-0.000	-1.862/-0.003	-0.178/-0.326	-0.000/-4.139
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_5	GO:0006857 oligopeptide transport	-5.531/-0.000	0.000/-1.557	-0.188/-0.223	0.000/-1.557	-0.012/-0.855
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_6	GO:0015198 oligopeptide transporter activity	-5.531/-0.000	0.000/-1.557	-0.188/-0.223	0.000/-1.557	-0.012/-0.855
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_7	GO:0051536 iron-sulfur cluster binding	-0.300/-0.208	-0.133/-0.424	-0.000/-4.480	-0.133/-0.424	-4.418/-0.000
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_8	GO:0019843 rRNA binding	-0.001/-1.891	-3.006/-0.000	-1.658/-0.004	-0.050/-0.658	-0.000/-2.603
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_9	GO:0004812 aminoacyl-tRNA ligase activity	0.000/-2.440	-0.115/-0.377	-3.475/-0.000	-0.660/-0.049	-0.002/-1.573
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_10	GO:0016874 ligase activity	-0.000/-2.839	-1.122/-0.019	-2.584/-0.000	-0.554/-0.092	-0.001/-2.339
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_11	GO:0005840 ribosome	-0.005/-1.515	-2.323/-0.001	-1.615/-0.005	-0.195/-0.302	-0.000/-3.187
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_12	GO:0006099 tricarboxylic acid cycle	-4.034/-0.000	-0.005/-1.166	0.000/-1.949	-0.230/-0.201	-0.099/-0.387
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_13	GO:0000049 tRNA binding	0.000/-1.362	-0.095/-0.349	-3.442/-0.000	-0.258/-0.156	0.000/-1.362
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_14	GO:0009401 phosphoenolpyruvate-dependent sugar phosphotransferase system	0.000/-1.557	-3.636/-0.000	-0.012/-0.855	-0.396/-0.097	-0.012/-0.855
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_15	GO:0051539 4 iron, 4 sulfur cluster binding	-0.542/-0.088	-0.254/-0.234	-0.000/-3.772	-0.158/-0.354	-2.248/-0.001
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_0	GO:0006412 translation	-0.000/-4.327	-3.186/-0.000	-3.541/-0.000	-0.124/-0.470	-0.000/-3.241
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_1	GO:0030288 outer membrane-bounded periplasmic space	-5.952/-0.000	-0.544/-0.073	0.000/-2.636	0.000/-2.636	-0.032/-0.744
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_2	GO:0030529 ribonucleoprotein complex	-0.000/-3.440	-2.799/-0.000	-2.799/-0.000	-0.149/-0.378	-0.000/-3.440
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_3	GO:0003735 structural constituent of ribosome	-0.000/-3.271	-3.038/-0.000	-2.613/-0.000	-0.106/-0.473	-0.000/-3.271
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_4	GO:0019843 rRNA binding	0.000/-3.623	-2.062/-0.001	-3.006/-0.000	-0.050/-0.658	-0.001/-1.891
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_5	GO:0005840 ribosome	-0.000/-3.187	-3.165/-0.000	-2.323/-0.001	-0.065/-0.625	-0.000/-2.509
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_6	GO:0016874 ligase activity	-0.001/-2.339	-0.300/-0.211	-4.211/-0.000	-0.554/-0.092	-0.001/-2.339
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_7	GO:0006099 tricarboxylic acid cycle	-4.872/-0.000	-0.005/-1.166	-0.005/-1.166	-0.230/-0.201	-0.005/-1.166
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_8	GO:0051536 iron-sulfur cluster binding	-1.160/-0.017	-0.001/-2.020	-0.000/-2.488	-0.300/-0.208	-2.701/-0.000
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_9	GO:0006857 oligopeptide transport	-4.526/-0.000	-0.065/-0.455	-0.012/-0.855	0.000/-1.557	-0.065/-0.455
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_10	GO:0015198 oligopeptide transporter activity	-4.526/-0.000	-0.065/-0.455	-0.012/-0.855	0.000/-1.557	-0.065/-0.455
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_11	GO:0003723 RNA binding	-0.001/-2.494	-1.358/-0.011	-3.011/-0.000	-0.107/-0.518	-0.007/-1.502
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_12	GO:0000105 histidine biosynthetic process	0.000/-0.972	0.000/-0.972	-0.049/-0.426	-4.130/-0.000	-0.049/-0.426
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_go_P.001_PAGE_13	GO:0009252 peptidoglycan biosynthetic process	-0.336/-0.146	-1.141/-0.013	-1.530/-0.005	-0.008/-1.152	0.000/-2.636
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_sr_P.001_PAGE_0	SoReU SoxRS Regulon Upregulated	0.000/-1.617	0.000/-1.617	-0.698/-0.035	-2.976/-0.000	-0.068/-0.434
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_sr_P.001_PAGE_1	AropD ArcAB operon Downregulated	-2.344/-0.001	-1.003/-0.018	-0.056/-0.582	-0.056/-0.582	0.000/-2.892
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_sr_P.001_PAGE_2	OxDeReD Oxygen Deprivation Response Downregulated	-2.196/-0.001	-0.923/-0.023	-0.115/-0.387	-0.048/-0.634	0.000/-2.999
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_sr_P.001_PAGE_0	AcStReU Acid Stress Response Upregulated	-0.198/-0.171	0.000/-0.997	0.000/-0.997	0.000/-0.997	-4.397/-0.000
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_sr_P.001_PAGE_1	AropD ArcAB operon Downregulated	-1.830/-0.002	-1.830/-0.002	-0.018/-0.917	-0.056/-0.582	0.000/-2.892
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_sr_P.001_PAGE_2	OxDeReD Oxygen Deprivation Response Downregulated	-1.706/-0.003	-1.706/-0.003	-0.048/-0.634	-0.048/-0.634	0.000/-2.999
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_sr_P.001_PAGE_3	OxStReU Oxidative Stress Response Upregulated	-0.000/-2.438	-0.002/-1.719	-0.473/-0.093	-1.805/-0.002	-1.120/-0.014
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_tf_P.001_PAGE_0	Fur_Up Fur_Up	-6.841/-0.000	0.000/-1.172	0.000/-1.172	0.000/-1.172	-0.030/-0.570
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_tf_P.001_PAGE_1	H-NS_Down H-NS_Down	-0.241/-0.215	-0.241/-0.215	-0.018/-0.928	0.000/-2.973	-3.764/-0.000
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_tf_P.001_PAGE_2	PurR_Down PurR_Down	0.000/-2.872	-0.690/-0.047	-1.762/-0.003	-0.690/-0.047	-0.005/-1.327
+figS19_ipage_X161_O_N_vs_X40_O_N.txt_PO_tf_P.001_PAGE_3	NagC_Down NagC_Down	-0.049/-0.426	-4.177/-0.000	-0.049/-0.426	0.000/-0.975	0.000/-0.983
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_tf_P.001_PAGE_0	NtrC_Up NtrC_Up	-4.057/-0.000	0.000/-2.266	-0.302/-0.156	-0.017/-0.887	-0.059/-0.541
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_tf_P.001_PAGE_1	PurR_Down PurR_Down	0.000/-2.872	-0.451/-0.099	-1.762/-0.003	-0.988/-0.020	-0.005/-1.327
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_tf_P.001_PAGE_2	IscR_Up IscR_Up	0.000/-0.583	0.000/-0.583	0.000/-0.583	-4.236/0.000	0.000/-0.588
+figS19_ipage_X161_O_N_vs_X35_O_N.txt_PO_tf_P.001_PAGE_3	Fur_Up Fur_Up	-4.290/-0.000	-0.030/-0.563	-0.030/-0.563	-0.030/-0.563	0.000/-1.181
+figS19_ipage_X35_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_0	GO:0051536 iron-sulfur cluster binding	-1.694/-0.004	-0.000/-3.695	-0.001/-2.020	-0.045/-0.770	-4.418/-0.000
+figS19_ipage_X35_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_1	GO:0006412 translation	-0.004/-1.695	-0.864/-0.041	-3.916/-0.000	-0.337/-0.195	-0.000/-3.753
+figS19_ipage_X35_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_2	GO:0006096 glycolysis	0.000/-2.440	-0.968/-0.020	-3.475/-0.000	-0.044/-0.634	-0.002/-1.573
+figS19_ipage_X35_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_3	GO:0016874 ligase activity	-0.005/-1.544	-1.122/-0.019	-3.767/-0.000	-0.049/-0.748	-0.001/-2.339
+figS19_ipage_X35_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_4	GO:0019843 rRNA binding	-0.050/-0.658	-2.511/-0.000	-0.724/-0.047	-0.199/-0.274	0.000/-3.623
+figS19_ipage_X35_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_5	GO:0051539 4 iron, 4 sulfur cluster binding	-0.968/-0.026	-0.001/-2.282	-0.020/-0.998	-0.020/-0.998	-3.578/-0.000
+figS19_ipage_X35_O_N_vs_X40_O_N.txt_PO_go_P.001_PAGE_6	GO:0000105 histidine biosynthetic process	0.000/-0.972	-4.130/-0.000	-0.049/-0.426	-0.049/-0.426	0.000/-0.972
