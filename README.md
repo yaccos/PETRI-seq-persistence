@@ -4,9 +4,10 @@ Code for "Identification and genetic dissection of convergent persister cell sta
 # Processing PETRI-seq data
 -	See PETRI_seq_scripts_v2, which is updated from https://tavazoielab.c2b2.columbia.edu/PETRI-seq/. This software is designed to be broadly useful for processing PETRI-seq data by different users. The folder contains another README with software requirements and instructions for the demo.
 
-# Notebooks to generate all figures for  “Identification and genetic dissection of convergent persister cell states”. System requirements are listed in each notebook.
-o	Many notebooks and additional scripts require processed data from GEO (GSE229435). Download supplementary files and put in ‘source_data/from_GEO’.
-o	Note that within source_data, only ‘included’ directory contains files. The others are filled as scripts are run or from GEO.
+# Notebooks to generate all figures for  “Identification and genetic dissection of convergent persister cell states”. 
+- System requirements are listed in each notebook.
+- Many notebooks and additional scripts require processed data from GEO (GSE229435). Download supplementary files and put in ‘source_data/from_GEO’.
+- Note that within source_data, only ‘included’ directory contains files. The others are filled as scripts are run or from GEO.
 
 Contents:
 -	Figure notebooks\
