@@ -18,13 +18,14 @@ Contents:
   - figure2_R_v4.ipynb
   - figure3_py_v4.ipynb\
                 - (first run save_seurat_objects.R, figure3_R.ipynb, fig3_persister_only.R)
-    o	figure3_R.ipynb
-        	(fig3_persister_only.R [first run save_seurat_objects.R])
-    o	figure4_py_v7.ipynb
-        	(fig3_persister_only.R [first run save_seurat_objects.R])
-    o	figure4_R.ipynb
-        	(fig3_persister_only.R [first run save_seurat_objects.R])
-    o	figure5_v8_py.ipynb
+  - figure3_R.ipynb
+                - (first run save_seurat_objects.R, fig3_persister_only.R)
+  - figure4_py_v7.ipynb
+                - (first run save_seurat_objects.R, fig3_persister_only.R)
+  - figure4_R.ipynb
+                - (first run save_seurat_objects.R, fig3_persister_only.R)
+  - figure5_v8_py.ipynb
+
     o	figureED1_R.ipynb
     o	figureED1_py.ipynb
         	(figureED1_R.ipynb, fig1_markers.R)
