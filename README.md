@@ -13,7 +13,8 @@ Contents:
 -	Figure notebooks
  	- figure1_py_v2.ipynb\
                 - (first run figure1_R_v2.ipynb)
-        - figure1_R_v2.ipynb
+ 	- figure1_R_v2.ipynb\
+
     o	figure2_py.ipynb
     o	figure2_R_v4.ipynb
     o	figure3_py_v4.ipynb
