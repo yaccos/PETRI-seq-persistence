@@ -9,10 +9,10 @@ o	Many notebooks and additional scripts require processed data from GEO (GSE2294
 o	Note that within source_data, only ‘included’ directory contains files. The others are filled as scripts are run or from GEO.
 
 Contents:
--	Figure notebooks
-                - (run first to make intermediate source file)
- 	- figure1_py_v2.ipynb
-                - (figure1_R_v2.ipynb)
+-	Figure notebooks\
+                - (run first to make intermediate source file)\
+ 	- figure1_py_v2.ipynb\
+                - (figure1_R_v2.ipynb)\
         - figure1_R_v2.ipynb
     o	figure2_py.ipynb
     o	figure2_R_v4.ipynb
