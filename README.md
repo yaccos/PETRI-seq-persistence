@@ -10,10 +10,10 @@ o	Note that within source_data, only ‘included’ directory contains files. Th
 
 Contents:
 -	Figure notebooks
-        	(run first to make intermediate source file)
-    o	figure1_py_v2.ipynb
-        	(figure1_R_v2.ipynb)
-    o	figure1_R_v2.ipynb
+                - (run first to make intermediate source file)
+ 	- figure1_py_v2.ipynb
+                - (figure1_R_v2.ipynb)
+        - figure1_R_v2.ipynb
     o	figure2_py.ipynb
     o	figure2_R_v4.ipynb
     o	figure3_py_v4.ipynb
