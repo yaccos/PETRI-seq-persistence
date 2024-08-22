@@ -2,7 +2,7 @@
 Code for "Identification and genetic dissection of convergent persister cell states"
 
 # Processing PETRI-seq data
--	See PETRI_seq_scripts_v2, which is updated from https://tavazoielab.c2b2.columbia.edu/PETRI-seq/. This software is designed to be broadly useful for processing PETRI-seq data by different users. The folder contains another README with software requirements and instructions for the demo.
+-	See PETRI_seq_scripts_v2, which is updated from https://tavazoielab.c2b2.columbia.edu/PETRI-seq/. The folder contains another README with software requirements and instructions for the demo.
 
 # Notebooks to generate all figures for  “Identification and genetic dissection of convergent persister cell states”. 
 - System requirements are listed in each notebook.
@@ -18,17 +18,16 @@ Contents:
   - figure2_R_v4.ipynb
   - figure3_py_v4.ipynb\
                 - (first run save_seurat_objects.R, figure3_R.ipynb, fig3_persister_only.R)
-  - figure3_R.ipynb
+  - figure3_R.ipynb\
                 - (first run save_seurat_objects.R, fig3_persister_only.R)
-  - figure4_py_v7.ipynb
+  - figure4_py_v7.ipynb\
                 - (first run save_seurat_objects.R, fig3_persister_only.R)
-  - figure4_R.ipynb
+  - figure4_R.ipynb\
                 - (first run save_seurat_objects.R, fig3_persister_only.R)
   - figure5_v8_py.ipynb
-
-    o	figureED1_R.ipynb
-    o	figureED1_py.ipynb
-        	(figureED1_R.ipynb, fig1_markers.R)
+  - figureED1_R.ipynb
+  - figureED1_py.ipynb\
+                - (first run figureED1_R.ipynb, fig1_markers.R)
     o	figureED2_py.ipynb
         	(figED2_markers_vs_clust5.R)
     o	figureED3_py.ipynb
