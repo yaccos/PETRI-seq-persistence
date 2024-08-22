@@ -11,7 +11,7 @@ Code for "Identification and genetic dissection of convergent persister cell sta
 
 Contents:
 -	Figure notebooks\
-                - (run first to make intermediate source file)\
+      -	(run first to make intermediate source file)
  	- figure1_py_v2.ipynb\
                 - (figure1_R_v2.ipynb)\
         - figure1_R_v2.ipynb
