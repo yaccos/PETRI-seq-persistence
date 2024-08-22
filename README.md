@@ -13,12 +13,11 @@ Contents:
 -	Figure notebooks
  	- figure1_py_v2.ipynb\
                 - (first run figure1_R_v2.ipynb)
- 	- figure1_R_v2.ipynb\
-
-    o	figure2_py.ipynb
-    o	figure2_R_v4.ipynb
-    o	figure3_py_v4.ipynb
-        	(figure3_R.ipynb, fig3_persister_only.R [first run save_seurat_objects.R])
+ 	- figure1_R_v2.ipynb
+  - figure2_py.ipynb
+  - figure2_R_v4.ipynb
+  - figure3_py_v4.ipynb\
+                - (first run save_seurat_objects.R, figure3_R.ipynb, fig3_persister_only.R)
     o	figure3_R.ipynb
         	(fig3_persister_only.R [first run save_seurat_objects.R])
     o	figure4_py_v7.ipynb
