@@ -14,51 +14,51 @@ Contents:
  	- figure1_py_v2.ipynb\
                 - (first run figure1_R_v2.ipynb)
  	- figure1_R_v2.ipynb
-  - figure2_py.ipynb
-  - figure2_R_v4.ipynb
-  - figure3_py_v4.ipynb\
+ 	- figure2_py.ipynb
+ 	- figure2_R_v4.ipynb
+ 	- figure3_py_v4.ipynb\
                 - (first run save_seurat_objects.R, figure3_R.ipynb, fig3_persister_only.R)
-  - figure3_R.ipynb\
+ 	- figure3_R.ipynb\
                 - (first run save_seurat_objects.R, fig3_persister_only.R)
-  - figure4_py_v7.ipynb\
+ 	- figure4_py_v7.ipynb\
                 - (first run save_seurat_objects.R, fig3_persister_only.R)
-  - figure4_R.ipynb\
+ 	- figure4_R.ipynb\
                 - (first run save_seurat_objects.R, fig3_persister_only.R)
-  - figure5_v8_py.ipynb
-  - figureED1_R.ipynb
-  - figureED1_py.ipynb\
+ 	- figure5_v8_py.ipynb
+ 	- figureED1_R.ipynb
+ 	- figureED1_py.ipynb\
                 - (first run figureED1_R.ipynb, fig1_markers.R)
-    o	figureED2_py.ipynb
-        	(figED2_markers_vs_clust5.R)
-    o	figureED3_py.ipynb
-    o	figureED3_R.ipynb
-    o	figureED4_R.ipynb
-    o	figureED5_py.ipynb
-        	(v4_markers_vs_clust1.R, v4_markers_vs_clust4.R)
-    o	figureED5_R.ipynb
-        	(hipA7_only.R, 6day_only.R, 6day_metG_only.R, ds30_seurat.R, save_seurat_objects.R)
-    o	figureED6_R.ipynb
-        	(seurat_ds38_min10_CFTonly_v4.R [first run save_seurat_objects.R])
-    o	figureED6_py.ipynb
-        	(v4_CFT_marker.R, figED2_markers_vs_clust5.R)
-    o	figureED7_R.ipynb
-        	(proteomics_seurat_v3.R)
-    o	figureED7_py.ipynb
-        	(fig1_markers.R)
-    o	figureED8_py.ipynb
-    o	figureED8_R.ipynb
-    o	figureED9_py.ipynb
-        	(fig3_persister_only.R)
-    o	figureED9_R.ipynb
-        	(fig3_persister_only.R)
-    o	figureED10_R.ipynb
-        	(fig3_persister_only.R [first run save_seurat_objects.R])
-    o	figureED10_py.ipynb
-    o	figureED11_py.ipynb
-    o	figureED12_py.ipynb
+ 	- figureED2_py.ipynb\
+                - (first run figED2_markers_vs_clust5.R)
+ 	- figureED3_py.ipynb
+ 	- figureED3_R.ipynb
+ 	- figureED4_R.ipynb
+ 	- figureED5_py.ipynb\
+                - (first run v4_markers_vs_clust1.R, v4_markers_vs_clust4.R)
+ 	- figureED5_R.ipynb\
+                - (first run save_seurat_objects.R, hipA7_only.R, 6day_only.R, 6day_metG_only.R, ds30_seurat.R)
+ 	- figureED6_R.ipynb\
+                - (first run save_seurat_objects.R, seurat_ds38_min10_CFTonly_v4.R)
+ 	- figureED6_py.ipynb\
+                - (first run v4_CFT_marker.R, figED2_markers_vs_clust5.R)
+ 	- figureED7_R.ipynb\
+                - (first run proteomics_seurat_v3.R)
+ 	- figureED7_py.ipynb\
+                - (first run fig1_markers.R)
+ 	- figureED8_py.ipynb
+ 	- figureED8_R.ipynb
+ 	- figureED9_py.ipynb\
+                - (first run fig3_persister_only.R)
+ 	- figureED9_R.ipynb\
+                - (first run fig3_persister_only.R)
+ 	- figureED10_R.ipynb\
+                - (first run save_seurat_objects.R,fig3_persister_only.R)
+ 	- figureED10_py.ipynb
+ 	- figureED11_py.ipynb
+ 	- figureED12_py.ipynb
 
 -	Additional scripts (*.R) to generate needed files for notebooks
 -	Source data (‘source_data/included/’)
 -	enrichment_and_p_val.py: example script for CRISPRi processing
 -	PETRI_seq_scripts_v2
-    o	Updated scripts and demo for processing raw PETRI-seq data to generate count matrix; see README.txt in this folder
+ 	 - Updated scripts and demo for processing raw PETRI-seq data to generate count matrix; see README.txt in this folder
