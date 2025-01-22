@@ -10,7 +10,15 @@ def trim_R2(sample,ID,name,bc_to_seq):
     barcodes = R2_file_name.split('_bc')
     bc1 = barcodes[1].split('_')[1]
     sequence = bc_to_seq[bc1]
-    os.system('cutadapt -a "' + sequence + 'TCTGGCGTAGGAGG;min_overlap=4" -a "TCTGGCGTAGGAGG;min_overlap=8" --minimum-length 16 -o ' + sample + '_R2_trimmed/' + R2_file_name + '_R2_trimmed.fastq.gz ' + sample + '_selected_cells/' + R2_file_name + '.fastq.gz >> ' + sample + '_logs/trim_R2_v4/trim_R2_v4.log')
+    cutadapt_command = (
+        f'cutadapt -a "{sequence}TCTGGCGTAGGAGG;min_overlap=4" '
+        f'-a "TCTGGCGTAGGAGG;min_overlap=8" '
+        f'--minimum-length 16 '
+        f'-o {sample}_R2_trimmed/{R2_file_name}_R2_trimmed.fastq.gz '
+        f'{sample}_selected_cells/{R2_file_name}.fastq.gz '
+        f'>> {sample}_logs/trim_R2_v4/trim_R2_v4.log'
+    )
+    os.system(cutadapt_command)
     print(R2_file_name)
 
 def reverse(seq):
@@ -33,7 +41,7 @@ if len(sys.argv) > 2:
     ID = sys.argv[2]
 else:
     ID = sample
-table = open(sample+'_selected_cumulative_frequency_table.txt')
+table = open(sample + '_selected_cumulative_frequency_table.txt')
 os.system('mkdir ' + sample + '_logs/trim_R2_v4')
 bc1_list = open(script_dir + '/sc_barcodes_v2/BC1.fa')
 bc_to_seq = {}

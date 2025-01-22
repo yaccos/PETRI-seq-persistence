@@ -17,8 +17,14 @@ def trim_R2(sample,ID,name,bc1_to_seq):
     bc1_sequence = bc1_to_seq[bc1]
     bc2_sequence = bc2_to_seq[bc2]
     bc3_sequence = bc3_to_seq[bc3]
-    full_seq = bc3_sequence + 'GGTCCTTGGCTTCGC' + bc2_sequence + 'CCTCCTACGCCAGA' + bc1_sequence
-    os.system('cutadapt -b ' + full_seq + ' -O 7 -e 0.2 --minimum-length 16 -o ' + sample + '_2nd_trim/' + R2_file_name + '_2trim.fastq.gz ' + sample + '_R2_trimmed/' + R2_file_name + '_R2_trimmed.fastq.gz >> ' + sample + '_logs/2nd_trim/2nd_trim.log')
+    full_seq = f"{bc3_sequence}GGTCCTTGGCTTCGC{bc2_sequence}CCTCCTACGCCAGA{bc1_sequence}"
+    cutadapt_command = (
+        f"cutadapt -b {full_seq} -O 7 -e 0.2 --minimum-length 16 "
+        f"-o {sample}_2nd_trim/{R2_file_name}_2trim.fastq.gz "
+        f"{sample}_R2_trimmed/{R2_file_name}_R2_trimmed.fastq.gz "
+        f">> {sample}_logs/2nd_trim/2nd_trim.log"
+    )
+    os.system(cutadapt_command)
 
 bc1_list = open(script_dir + '/sc_barcodes_v2/BC1.fa')
 bc1_to_seq = {}
@@ -50,11 +56,11 @@ if len(sys.argv) > 2:
     ID = sys.argv[2]
 else:
     ID = sample
-table = open(sample+'_selected_cumulative_frequency_table.txt')
-os.system('mkdir ' + sample + '_logs/2nd_trim')
+table = open(sample + '_selected_cumulative_frequency_table.txt')
+os.system(f'mkdir {sample}_logs/2nd_trim')
 bc1_list = open(script_dir + '/sc_barcodes_v2/BC1.fa')
 
-os.system('mkdir ' + sample + '_2nd_trim')
+os.system(f'mkdir {sample}_2nd_trim')
 for line in table:
     name = line.split('\t')[1]
     trim_R2(sample,ID,name,bc1_to_seq)

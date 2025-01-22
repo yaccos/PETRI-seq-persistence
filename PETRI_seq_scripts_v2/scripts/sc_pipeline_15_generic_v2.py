@@ -63,7 +63,7 @@ print('Quality Trim Done')
 # Use pear to match read 1 and read 2; for those that overlap, remove reads less than 75bp
 pear_command = (
     f'seq {n_lanes} | time parallel --bar -j5 pear -f {sample}/{sample}_QF_L00{{}}_R1_001.fastq.gz '
-    f'-r {sample}/{sample}_QF_L00{{}}_R2_001.fastq.gz -o {sample}/{sample}_QF_L00{{}}_p -v 8 -p 0.001 -n 0 -k'
+    f'-r {sample}/{sample}_QF_L00{{}}_R2_001.fastq.gz -o {sample}/{sample}_QF_L00{{}}_p -v 8 -p 0.001 -n 0'
 )
 os.system(pear_command)
 cutadapt_command = (
@@ -138,6 +138,9 @@ for cmd in remove_intermediate_commands:
 os.system(f'mkdir {sample}_bc3')
 if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc3.log'):
     os.system(f'rm {sample}_logs/sc_pipeline_15/bc3.log')
+
+# Note: bc3 adapter sequences are 23 nt long. The error rate is set to 0.05, but this creates ambiguities
+# causing trouble for demultiplexing.
 bc3_command = (
     f'seq {n_lanes} | time parallel --bar -j5 cutadapt -g file:{script_dir}sc_barcodes_v2/BC3_anchored.fa '
     f'-e 0.05 --overlap 21 --untrimmed-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R1_001.fastq.gz '
@@ -177,7 +180,8 @@ print('bc2 done')
 # Checkpoint to be sure all bc3 files were demultiplexed
 n_R1 = len([name for name in os.listdir(f'{sample}_bc3') if 'R1' in name and 'no_bc3' not in name])
 n_R2 = len([name for name in os.listdir(f'{sample}_bc3') if 'R2' in name and 'no_bc3' not in name])
-expected_n = open(f'{sample}_logs/sc_pipeline_15/bc2.log', 'r').read().count("Summary")
+bc2_log = open(f'{sample}_logs/sc_pipeline_15/bc2.log', 'r').read()
+expected_n = bc2_log.count("Summary") + bc2_log.count("No reads processed!")
 if (n_R1 != expected_n) | (n_R2 != expected_n):
     print('ERROR: total demultiplexed bc2 files do not match expected input from bc3. Maybe process was disrupted?')
     quit()
@@ -210,7 +214,8 @@ for bc3 in range(1, 97):
 # Checkpoint to be sure all bc2 files were demultiplexed
 n_R1 = len([name for name in os.listdir(f'{sample}_bc2') if 'R1' in name and 'no_bc2' not in name])
 n_R2 = len([name for name in os.listdir(f'{sample}_bc2') if 'R2' in name and 'no_bc2' not in name])
-expected_n = open(f'{sample}_logs/sc_pipeline_15/bc1.log', 'r').read().count("Summary")
+bc_1_log = open(f'{sample}_logs/sc_pipeline_15/bc1.log', 'r').read()
+expected_n = bc_1_log.count("Summary") + bc_1_log.count("No reads processed!")
 if (n_R1 != expected_n) | (n_R2 != expected_n):
     print('ERROR: total demultiplexed bc1 files do not match expected input from bc2. Maybe process was disrupted?')
     quit()
@@ -226,4 +231,4 @@ os.system(f'rm {sample}_bc1_table.txt')
 print('bc1 done')
 
 end = time.time()
-print(end - start)
+print(f"Time elapsed during Python pipeline: {end - start}")

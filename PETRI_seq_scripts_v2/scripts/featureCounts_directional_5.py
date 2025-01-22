@@ -10,11 +10,35 @@ def pipeline(sample,ID,name,gff):
     R2_file_name = R2_file_name.replace(' ' , '')
     R2_short_name = R2_file_name.replace(ID+'_','')
     sam_edit_tools.no_xt_new(old_sample + '_bwa_sam/1/' + R2_short_name + '/stdout', sample + '_no_XT/' + R2_file_name + '_no_XT.sam')
-    os.system('samtools view -bS ' + sample + '_no_XT/' +  R2_file_name + '_no_XT.sam | samtools sort - > ' +  sample + "_no_XT/" +  R2_file_name + "_no_XT_sorted.bam")
-    os.system("samtools index " + sample + "_no_XT/" + R2_file_name + "_no_XT_sorted.bam")
-    os.system("featureCounts -t '" + gff_tag + "' -g 'name' -s 1 -a " + gff + " -o " + sample + "_FC/" + R2_file_name + "_FC -R BAM " + sample + "_no_XT/" + R2_file_name + "_no_XT_sorted.bam")
-    os.system("samtools index " + sample + "_FC/" + R2_file_name + "_no_XT_sorted.bam.featureCounts.bam")
-    os.system('umi_tools group --per-gene --gene-tag=XT -I ' + sample + '_FC/' + R2_file_name + '_no_XT_sorted.bam.featureCounts.bam --group-out=' + sample + '_FC_directional_grouped_2/' + R2_file_name + '_UMI_counts.tsv.gz --method=directional --output-bam -S ' + sample + "_FC_directional_grouped_2/" + R2_file_name + '_group_FC.bam >> ' + old_sample + '_logs/featureCounts_directional_5/'+sample+'_umi_group.log')
+    samtools_view_command = (
+        f'samtools view -bS {sample}_no_XT/{R2_file_name}_no_XT.sam | '
+        f'samtools sort - > {sample}_no_XT/{R2_file_name}_no_XT_sorted.bam'
+    )
+    os.system(samtools_view_command)
+    
+    samtools_index_command_1 = (
+        f'samtools index {sample}_no_XT/{R2_file_name}_no_XT_sorted.bam'
+    )
+    os.system(samtools_index_command_1)
+    
+    featureCounts_command = (
+        f"featureCounts -t 'operon' -g 'name' -s 1 -a {gff} -o {sample}_FC/{R2_file_name}_FC "
+        f"-R BAM {sample}_no_XT/{R2_file_name}_no_XT_sorted.bam"
+    )
+    os.system(featureCounts_command)
+    
+    samtools_index_command_2 = (
+        f'samtools index {sample}_FC/{R2_file_name}_no_XT_sorted.bam.featureCounts.bam'
+    )
+    os.system(samtools_index_command_2)
+    
+    umi_tools_command = (
+        f'umi_tools group --per-gene --gene-tag=XT -I {sample}_FC/{R2_file_name}_no_XT_sorted.bam.featureCounts.bam '
+        f'--group-out={sample}_FC_directional_grouped_2/{R2_file_name}_UMI_counts.tsv.gz '
+        f'--method=directional --output-bam -S {sample}_FC_directional_grouped_2/{R2_file_name}_group_FC.bam '
+        f'>> {old_sample}_logs/featureCounts_directional_5/{sample}_umi_group.log'
+    )
+    os.system(umi_tools_command)
 
 ID = sys.argv[1] 
 if len(sys.argv) > 2:
@@ -25,18 +49,6 @@ if len(sys.argv) > 3:
     old_sample = sys.argv[3]
 os.system('mkdir ' + sample + '_no_XT/')
 gff = sys.argv[4]
-gff_open = open(gff)
-i=0
-for line in gff_open:
-    if len(line.split('\t')) == 9:
-        i+=1
-        if i == 1:
-            gff_tag = line.split('\t')[2]
-        new_gff_tag = line.split('\t')[2]
-        if new_gff_tag != gff_tag:
-            sys.exit('ambiguous gff tag')
-        gff_tag = new_gff_tag
- 
 table = open(ID+'_selected_cumulative_frequency_table.txt')
 
 os.system('mkdir ' + sample + '_FC')
