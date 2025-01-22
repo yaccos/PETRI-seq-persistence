@@ -30,6 +30,8 @@ def log_to_table(sample, bc_round):
 			name = f"{sample}_{line_bc}{bcs}"
 			name = name.replace(' ', '')
 			table.write(f'{name}\t{bc_count.split(" ")[1]}\n')
+	log.close()
+	table.close()
 
 def log_plot(sample, bc_round, cell_num):
 	#bc_plot = {}

@@ -17,4 +17,5 @@ demo/random20000/random20000_S1_L001_R1_001_fastqc.html
 demo/random20000/random20000_S1_L001_R1_001_fastqc.zip
 demo/random20000/random20000_S1_L001_R2_001_fastqc.html
 demo/random20000/random20000_S1_L001_R2_001_fastqc.zip
+*.pyc
 
