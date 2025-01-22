@@ -1,0 +1,7 @@
+scripts/__pycache__
+random20000_logs
+random20000_bc*
+demo/random20000/random20000_QF*
+demo/random20000/*_fastq.*
+*.swp
+
