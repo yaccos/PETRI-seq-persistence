@@ -58,6 +58,7 @@ trim_command = (
     f'{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq.gz > {sample}_logs/sc_pipeline_15/QF.log'
 )
 os.system(trim_command)
+
 print('Quality Trim Done')
 
 # Use pear to match read 1 and read 2; for those that overlap, remove reads less than 75bp
@@ -66,6 +67,7 @@ pear_command = (
     f'-r {sample}/{sample}_QF_L00{{}}_R2_001.fastq.gz -o {sample}/{sample}_QF_L00{{}}_p -v 8 -p 0.001 -n 0'
 )
 os.system(pear_command)
+
 cutadapt_command = (
     f'seq {n_lanes} | time parallel --bar -j4 cutadapt -m 75 -o {sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq.gz '
     f'{sample}/{sample}_QF_L00{{}}_p.assembled.fastq'
@@ -78,6 +80,7 @@ split_r1_command = (
     f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq.gz'
 )
 os.system(split_r1_command)
+
 split_r2_command = (
     f'seq {n_lanes} | time parallel --bar -j4 cutadapt -u 58 -o {sample}/{sample}_QF_L00{{}}_preR2_paired.fastq.gz '
     f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq.gz'
@@ -94,6 +97,7 @@ gzip_forward_command = (
     f'seq {n_lanes} | time parallel --bar -j4 gzip {sample}/{sample}_QF_L00{{}}_p.unassembled.forward.fastq'
 )
 os.system(gzip_forward_command)
+
 gzip_reverse_command = (
     f'seq {n_lanes} | time parallel --bar -j4 gzip {sample}/{sample}_QF_L00{{}}_p.unassembled.reverse.fastq'
 )

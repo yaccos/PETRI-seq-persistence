@@ -33,7 +33,7 @@ def log_to_table(sample, bc_round):
 
 def log_plot(sample, bc_round, cell_num):
 	#bc_plot = {}
-	table = pd.read_csv(sample + '_' + bc_round + '_table.txt', sep='\t')
+	table = pd.read_csv(f'{sample}_{bc_round}_table.txt', sep='\t')
 	#bc_plot[sample + '_' + bc_round] = table['count'].plot(kind='hist', title = sample + ' ' + bc_round + ', total = ' + str(sum(table['count'])))
 	#bc_plot[sample + '_' + bc_round].get_figure().savefig(sample + '_' + bc_round + '_demultiplexing.pdf')
 	#plt.cla()
