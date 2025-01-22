@@ -1,148 +1,229 @@
 ## Supplement to "Prokaryotic single-cell RNA sequencing by in situ combinatorial indexing" (doi: 10.1038/s41564-020-0729-6)
 ## Written by Sydney Blattman
 ## Tavazoie Lab, Columbia University
-## Last updated July 2024 
+## Last updated January 2025
 
 import time
 import os
 import sys
 import preprocess_2_sc15 as preprocess
 import os.path
-import os, errno
 
 start = time.time()
 script_dir = sys.argv[0].split(sys.argv[0].split('/')[-1])[0]
-i=1
+i = 1
 sample = sys.argv[i][0:sys.argv[i].find('_S')]
-if(sys.argv[i].find('_S') == -1):
-    print('error: must include _S after after sample')
+if sys.argv[i].find('_S') == -1:
+    print('error: must include _S after sample')
     exit()
 n_lanes = int(sys.argv[2])
 
-## Clean up old files
-os.system('rm -r ' + sample + '/*QF_* 2> /dev/null')
-os.system('rm -r ' + sample + '_bc3 2> /dev/null')
-os.system('rm -r ' + sample + '_bc2 2> /dev/null')
-os.system('rm -r ' + sample + '_bc1 2> /dev/null')
-os.system('rm -r ' + sample + '_bc1_table.txt 2> /dev/null')
-os.system('rm -r ' + sample + '_bc2_table.txt 2> /dev/null')
-os.system('rm -r ' + sample + '_bc3_table.txt 2> /dev/null')
-os.system('rm -r ' + sample + '_logs/sc_pipeline_15 2> /dev/null')
-os.system('rm -r ' + sample + '_bc1_cumulative_frequency_table.txt 2> /dev/null')
-os.system('rm -r ' + sample + '_bc2_cumulative_frequency_table.txt 2> /dev/null')
-os.system('rm -r ' + sample + '_bc3_cumulative_frequency_table.txt 2> /dev/null')
+# Clean up old files
+cleanup_commands = [
+    f'rm -r {sample}/*QF_* 2> /dev/null',
+    f'rm -r {sample}_bc3 2> /dev/null',
+    f'rm -r {sample}_bc2 2> /dev/null',
+    f'rm -r {sample}_bc1 2> /dev/null',
+    f'rm -r {sample}_bc1_table.txt 2> /dev/null',
+    f'rm -r {sample}_bc2_table.txt 2> /dev/null',
+    f'rm -r {sample}_bc3_table.txt 2> /dev/null',
+    f'rm -r {sample}_logs/sc_pipeline_15 2> /dev/null',
+    f'rm -r {sample}_bc1_cumulative_frequency_table.txt 2> /dev/null',
+    f'rm -r {sample}_bc2_cumulative_frequency_table.txt 2> /dev/null',
+    f'rm -r {sample}_bc3_cumulative_frequency_table.txt 2> /dev/null'
+]
 
-os.system('mkdir ' + sample + '_logs')
-os.system('mkdir ' + sample + '_logs/sc_pipeline_15')
+for cmd in cleanup_commands:
+    os.system(cmd)
 
-print('Preprocessing ' + sample)
+os.system(f'mkdir {sample}_logs')
+os.system(f'mkdir {sample}_logs/sc_pipeline_15')
 
-## Run Fastqc on all lanes
-os.system('mkdir ' + sample + '_logs/sc_pipeline_15/fastqc')
-os.system('ls ' + sample + '/*_001.fastq.gz | time parallel --bar --results ' + sample + '_logs/sc_pipeline_15/fastqc -j8 fastqc {}')
+print(f'Preprocessing {sample}')
+
+# Run Fastqc on all lanes
+os.system(f'mkdir {sample}_logs/sc_pipeline_15/fastqc')
+fastqc_command = (
+    f'ls {sample}/*_001.fastq.gz | time parallel --bar --results '
+    f'{sample}_logs/sc_pipeline_15/fastqc -j8 fastqc {{}}'
+)
+os.system(fastqc_command)
 print('Fastqc done')
 
-## trim low quality reads
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j4 cutadapt -q 10,10 --minimum-length 55:14 --max-n 3 --pair-filter=any -o ' + sample + '/' + sample + '_QF_L00{}_R1_001.fastq.gz -p ' + sample + '/' + sample + '_QF_L00{}_R2_001.fastq.gz ' + sample + '/' + sys.argv[i] + '_L00{}_R1_001.fastq.gz ' + sample + '/' + sys.argv[i] + '_L00{}_R2_001.fastq.gz > ' + sample + '_logs/sc_pipeline_15/QF.log')
+# Trim low quality reads
+trim_command = (
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -q 10,10 --minimum-length 55:14 '
+    f'--max-n 3 --pair-filter=any -o {sample}/{sample}_QF_L00{{}}_R1_001.fastq.gz '
+    f'-p {sample}/{sample}_QF_L00{{}}_R2_001.fastq.gz {sample}/{sys.argv[i]}_L00{{}}_R1_001.fastq.gz '
+    f'{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq.gz > {sample}_logs/sc_pipeline_15/QF.log'
+)
+os.system(trim_command)
 print('Quality Trim Done')
 
-## use pear to match read 1 and read 2; for those that overlap, remove reads less than 75bp (too little cDNA to align) 
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j5 pear -f ' + sample + '/' + sample + '_QF_L00{}_R1_001.fastq.gz -r ' + sample + '/' + sample + '_QF_L00{}_R2_001.fastq.gz -o ' + sample + '/' + sample + '_QF_L00{}_p -v 8 -p 0.001 -n 0 -k')
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j4 cutadapt -m 75 -o ' + sample + '/' + sample + '_QF_L00{}_paired_min75_001.fastq.gz ' + sample + '/' + sample + '_QF_L00{}_p.assembled.fastq')
+# Use pear to match read 1 and read 2; for those that overlap, remove reads less than 75bp
+pear_command = (
+    f'seq {n_lanes} | time parallel --bar -j5 pear -f {sample}/{sample}_QF_L00{{}}_R1_001.fastq.gz '
+    f'-r {sample}/{sample}_QF_L00{{}}_R2_001.fastq.gz -o {sample}/{sample}_QF_L00{{}}_p -v 8 -p 0.001 -n 0 -k'
+)
+os.system(pear_command)
+cutadapt_command = (
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -m 75 -o {sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq.gz '
+    f'{sample}/{sample}_QF_L00{{}}_p.assembled.fastq'
+)
+os.system(cutadapt_command)
 
-## split paired reads back into two files of read 1 (58 bases) and read 2 (remaining sequence - reverse comp)
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j4 cutadapt -l 58 -o ' + sample + '/' + sample + '_QF_L00{}_R1_paired.fastq.gz ' + sample + '/' + sample + '_QF_L00{}_paired_min75_001.fastq.gz') 
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j4 cutadapt -u 58 -o ' + sample + '/' + sample + '_QF_L00{}_preR2_paired.fastq.gz ' + sample + '/' + sample + '_QF_L00{}_paired_min75_001.fastq.gz')
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j4 seqkit seq -r -p -t DNA ' + sample + '/' + sample + '_QF_L00{}_preR2_paired.fastq.gz -o ' + sample + '/' + sample + '_QF_L00{}_R2_paired.fastq.gz') # reverse comp for R2
+# Split paired reads back into two files of read 1 (58 bases) and read 2 (remaining sequence - reverse comp)
+split_r1_command = (
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -l 58 -o {sample}/{sample}_QF_L00{{}}_R1_paired.fastq.gz '
+    f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq.gz'
+)
+os.system(split_r1_command)
+split_r2_command = (
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -u 58 -o {sample}/{sample}_QF_L00{{}}_preR2_paired.fastq.gz '
+    f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq.gz'
+)
+os.system(split_r2_command)
+reverse_comp_command = (
+    f'seq {n_lanes} | time parallel --bar -j4 seqkit seq -r -p -t DNA '
+    f'{sample}/{sample}_QF_L00{{}}_preR2_paired.fastq.gz -o {sample}/{sample}_QF_L00{{}}_R2_paired.fastq.gz'
+)
+os.system(reverse_comp_command)
 
-## merge back the reads that overlapped by pear and those that didn't to get clean non-overlapping reads 1 and 2
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j4 gzip ' + sample + '/' + sample + '_QF_L00{}_p.unassembled.forward.fastq')
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j4 gzip ' + sample + '/' + sample + '_QF_L00{}_p.unassembled.reverse.fastq')
-for l in range(1,n_lanes+1):
-    os.system('gunzip -c ' + sample + '/' + sample + '_QF_L00' + str(l) + '_p.unassembled.forward.fastq.gz ' + sample + '/' + sample + '_QF_L00' + str(l) + '_R1_paired.fastq.gz | gzip > ' + sample + '/' + sample + '_QF_merged_L00' + str(l) + '_R1.fastq.gz')
-    os.system('gunzip -c ' + sample + '/' + sample + '_QF_L00' + str(l) + '_p.unassembled.reverse.fastq.gz ' + sample + '/' + sample + '_QF_L00' + str(l) + '_R2_paired.fastq.gz | gzip > ' + sample + '/' + sample + '_QF_merged_L00' + str(l) + '_R2.fastq.gz')
+# Merge back the reads that overlapped by pear and those that didn't to get clean non-overlapping reads 1 and 2
+gzip_forward_command = (
+    f'seq {n_lanes} | time parallel --bar -j4 gzip {sample}/{sample}_QF_L00{{}}_p.unassembled.forward.fastq'
+)
+os.system(gzip_forward_command)
+gzip_reverse_command = (
+    f'seq {n_lanes} | time parallel --bar -j4 gzip {sample}/{sample}_QF_L00{{}}_p.unassembled.reverse.fastq'
+)
+os.system(gzip_reverse_command)
+for l in range(1, n_lanes + 1):
+    merge_r1_command = (
+        f'gunzip -c {sample}/{sample}_QF_L00{l}_p.unassembled.forward.fastq.gz '
+        f'{sample}/{sample}_QF_L00{l}_R1_paired.fastq.gz | gzip > {sample}/{sample}_QF_merged_L00{l}_R1.fastq.gz'
+    )
+    os.system(merge_r1_command)
+    merge_r2_command = (
+        f'gunzip -c {sample}/{sample}_QF_L00{l}_p.unassembled.reverse.fastq.gz '
+        f'{sample}/{sample}_QF_L00{l}_R2_paired.fastq.gz | gzip > {sample}/{sample}_QF_merged_L00{l}_R2.fastq.gz'
+    )
+    os.system(merge_r2_command)
 
-## extract UMI
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j5 umi_tools extract --stdin=' + sample + '/' + sample + '_QF_merged_L00{}_R1.fastq.gz --bc-pattern=NNNNNNN --read2-in=' + sample + '/' + sample + '_QF_merged_L00{}_R2.fastq.gz --log=' + sample + '_logs/sc_pipeline_15/UMI_extract.log --stdout ' + sample + '/' + sample + '_QF_UMI_L00{}_R1_001.fastq.gz --read2-out=' + sample + '/' +  sample + '_QF_UMI_L00{}_R2_001.fastq.gz')
+# Extract UMI
+umi_command = (
+    f'seq {n_lanes} | time parallel --bar -j5 umi_tools extract --stdin={sample}/{sample}_QF_merged_L00{{}}_R1.fastq.gz '
+    f'--bc-pattern=NNNNNNN --read2-in={sample}/{sample}_QF_merged_L00{{}}_R2.fastq.gz '
+    f'--log={sample}_logs/sc_pipeline_15/UMI_extract.log --stdout {sample}/{sample}_QF_UMI_L00{{}}_R1_001.fastq.gz '
+    f'--read2-out={sample}/{sample}_QF_UMI_L00{{}}_R2_001.fastq.gz'
+)
+os.system(umi_command)
 
-os.system('rm -r ' + sample + '/' + sample + '*p.unassembled.forward.fastq.gz')
-os.system('rm -r ' + sample + '/' + sample + '*p.unassembled.reverse.fastq.gz')
-os.system('rm -r ' + sample + '/' + sample + '*_paired_min75_001.fastq.gz')
-os.system('rm -r ' + sample + '/' + sample + '*preR2_paired.fastq.gz')
-os.system('rm -r ' + sample + '/' + sample + '*_p.assembled.fastq')
-os.system('rm -r ' + sample + '/' + sample + '*_p.discarded.fastq')
-os.system('rm -r ' + sample + '/' + sample + '*_R1_paired.fastq.gz') 
-os.system('rm -r ' + sample + '/' + sample + '*_R2_paired.fastq.gz')
-## demultiplex by bc3
-os.system('mkdir ' + sample + '_bc3')
-if(os.path.exists(sample + '_logs/sc_pipeline_15/bc3.log')):
-    os.system('rm ' + sample + '_logs/sc_pipeline_15/bc3.log')
-os.system('seq ' + str(n_lanes) + ' | time parallel --bar -j5 cutadapt -g file:'+script_dir+'sc_barcodes_v2/BC3_anchored.fa -e 0.05 --overlap 21 --untrimmed-output ' + sample + '_bc3/' + sample + '_no_bc3_L00{}_R1_001.fastq.gz  --untrimmed-paired-output ' + sample + '_bc3/' + sample + '_no_bc3_L00{}_R2_001.fastq.gz  -o ' + sample + '_bc3/' + sample + '_{name}x_L00{}_R1_001.fastq.gz -p ' + sample + '_bc3/' + sample + '_{name}x_L00{}_R2_001.fastq.gz ' + sample + '/' + sample + '_QF_UMI_L00{}_R1_001.fastq.gz ' + sample + '/' + sample + '_QF_UMI_L00{}_R2_001.fastq.gz >> ' + sample + '_logs/sc_pipeline_15/bc3.log')
-print('script dir: ' + script_dir)
+# Remove intermediate files
+remove_intermediate_commands = [
+    f'rm -r {sample}/{sample}*p.unassembled.forward.fastq.gz',
+    f'rm -r {sample}/{sample}*p.unassembled.reverse.fastq.gz',
+    f'rm -r {sample}/{sample}*_paired_min75_001.fastq.gz',
+    f'rm -r {sample}/{sample}*preR2_paired.fastq.gz',
+    f'rm -r {sample}/{sample}*_p.assembled.fastq',
+    f'rm -r {sample}/{sample}*_p.discarded.fastq',
+    f'rm -r {sample}/{sample}*_R1_paired.fastq.gz',
+    f'rm -r {sample}/{sample}*_R2_paired.fastq.gz'
+]
 
-os.system('cd ' + sample + '_bc3 && python ' + script_dir + 'merge_lanes_mac_compatible.py')
+for cmd in remove_intermediate_commands:
+    os.system(cmd)
+
+# Demultiplex by bc3
+os.system(f'mkdir {sample}_bc3')
+if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc3.log'):
+    os.system(f'rm {sample}_logs/sc_pipeline_15/bc3.log')
+bc3_command = (
+    f'seq {n_lanes} | time parallel --bar -j5 cutadapt -g file:{script_dir}sc_barcodes_v2/BC3_anchored.fa '
+    f'-e 0.05 --overlap 21 --untrimmed-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R1_001.fastq.gz '
+    f'--untrimmed-paired-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R2_001.fastq.gz '
+    f'-o {sample}_bc3/{sample}_{{name}}x_L00{{}}_R1_001.fastq.gz -p {sample}_bc3/{sample}_{{name}}x_L00{{}}_R2_001.fastq.gz '
+    f'{sample}/{sample}_QF_UMI_L00{{}}_R1_001.fastq.gz {sample}/{sample}_QF_UMI_L00{{}}_R2_001.fastq.gz >> '
+    f'{sample}_logs/sc_pipeline_15/bc3.log'
+)
+os.system(bc3_command)
+print('script dir:', script_dir)
+
+os.system(f'cd {sample}_bc3 && python {script_dir}merge_lanes_mac_compatible.py')
 print('bc3 done')
 
-## demultiplex by bc2
-os.system('mkdir ' + sample + '_bc2')
-if(os.path.exists(sample + '_logs/sc_pipeline_15/bc2.log')):
-    os.system('rm ' + sample + '_logs/sc_pipeline_15/bc2.log')
+# Demultiplex by bc2
+os.system(f'mkdir {sample}_bc2')
+if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc2.log'):
+    os.system(f'rm {sample}_logs/sc_pipeline_15/bc2.log')
 bc3_list = ''
-for i in range(1,97):
-    if(os.path.exists(sample + '_bc3/' + sample + '_bc3_' + str(i) + 'x_R1_all_lanes.fastq.gz')):
+for i in range(1, 97):
+    if os.path.exists(f'{sample}_bc3/{sample}_bc3_{i}x_R1_all_lanes.fastq.gz'):
         if bc3_list == '':
             bc3_list = str(i)
         else:
-            bc3_list = bc3_list + '\n' + str(i)
-os.system('echo "' + bc3_list + '" | time parallel --bar -j12 cutadapt -g file:'+script_dir+'sc_barcodes_v2/BC2_anchored.fa -e 0.05 --overlap 20 --untrimmed-output ' + sample + '_bc2/' + sample + '_bc1_{}_R1_no_bc2.fastq.gz  --untrimmed-paired-output ' + sample + '_bc2/' + sample + '_bc3_{}_R2_no_bc2.fastq.gz -o ' + sample + '_bc2/' + sample + '_R1_{name}_bc3_{}.fastq.gz -p ' + sample + '_bc2/' + sample + '_R2_{name}_bc3_{}.fastq.gz ' + sample + '_bc3/' + sample +'_bc3_{}x_R1_all_lanes.fastq.gz ' + sample + '_bc3/' + sample + '_bc3_{}x_R2_all_lanes.fastq.gz >> ' + sample + '_logs/sc_pipeline_15/bc2.log')
+            bc3_list = f'{bc3_list}\n{i}'
+bc2_command = (
+    f'echo "{bc3_list}" | time parallel --bar -j12 cutadapt -g file:{script_dir}sc_barcodes_v2/BC2_anchored.fa '
+    f'-e 0.05 --overlap 20 --untrimmed-output {sample}_bc2/{sample}_bc1_{{}}_R1_no_bc2.fastq.gz '
+    f'--untrimmed-paired-output {sample}_bc2/{sample}_bc3_{{}}_R2_no_bc2.fastq.gz '
+    f'-o {sample}_bc2/{sample}_R1_{{name}}_bc3_{{}}.fastq.gz -p {sample}_bc2/{sample}_R2_{{name}}_bc3_{{}}.fastq.gz '
+    f'{sample}_bc3/{sample}_bc3_{{}}x_R1_all_lanes.fastq.gz {sample}_bc3/{sample}_bc3_{{}}x_R2_all_lanes.fastq.gz >> '
+    f'{sample}_logs/sc_pipeline_15/bc2.log'
+)
+os.system(bc2_command)
 print('bc2 done')
 
-#### checkpoint to be sure all bc3 files were demultiplexed
-n_R1 = len([name for name in os.listdir(sample + '_bc3') if (('R1' in name) and ('no_bc3' not in name))])
-n_R2 = len([name for name in os.listdir(sample + '_bc3') if (('R2' in name) and ('no_bc3' not in name))])
-expected_n = open(sample + '_logs/sc_pipeline_15/bc2.log', 'r').read().count("Summary")
+# Checkpoint to be sure all bc3 files were demultiplexed
+n_R1 = len([name for name in os.listdir(f'{sample}_bc3') if 'R1' in name and 'no_bc3' not in name])
+n_R2 = len([name for name in os.listdir(f'{sample}_bc3') if 'R2' in name and 'no_bc3' not in name])
+expected_n = open(f'{sample}_logs/sc_pipeline_15/bc2.log', 'r').read().count("Summary")
 if (n_R1 != expected_n) | (n_R2 != expected_n):
-    print('ERROR: total demultiplexed bc2 files do not match expected input from bc3. Maybe process was disrupted?') 
+    print('ERROR: total demultiplexed bc2 files do not match expected input from bc3. Maybe process was disrupted?')
     quit()
 
-os.system('rm -r ' + sample + '_bc3')
+os.system(f'rm -r {sample}_bc3')
 
-## demultiplex by bc1
-os.system('mkdir ' + sample + '_bc1')
-if(os.path.exists(sample + '_logs/sc_pipeline_15/bc1.log')):
-    os.system('rm ' + sample + '_logs/sc_pipeline_15/bc1.log')
-for bc3 in range(1,97):
+# Demultiplex by bc1
+os.system(f'mkdir {sample}_bc1')
+if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc1.log'):
+    os.system(f'rm {sample}_logs/sc_pipeline_15/bc1.log')
+for bc3 in range(1, 97):
     bc2_list = ''
-    for bc2 in range(1,97):
-        if(os.path.exists(sample + '_bc2/' + sample + '_R1_bc2_' + str(bc2) + '_bc3_' + str(bc3) + '.fastq.gz')):
+    for bc2 in range(1, 97):
+        if os.path.exists(f'{sample}_bc2/{sample}_R1_bc2_{bc2}_bc3_{bc3}.fastq.gz'):
             if bc2_list == '':
                 bc2_list = str(bc2)
             else:
-                bc2_list = bc2_list + '\n' + str(bc2)
+                bc2_list = f'{bc2_list}\n{bc2}'
     print(bc3)
     if bc2_list != '':
-        os.system('echo "' + bc2_list + '" | time parallel --bar -j12 cutadapt -g file:'+script_dir+'sc_barcodes_v2/BC1_5p_anchor_v2.fa -e 0.2 --no-indels --overlap 7 --no-trim -o ' + sample + '_bc1/' + sample + '_R1_{name}_bc2_{}_bc3_' + str(bc3) + '.fastq.gz -p ' + sample + '_bc1/' + sample + '_R2_{name}_bc2_{}_bc3_' + str(bc3) + '.fastq.gz ' + sample + '_bc2/' + sample +'_R1_bc2_{}_bc3_' + str(bc3) + '.fastq.gz ' + sample + '_bc2/' + sample + '_R2_bc2_{}_bc3_' + str(bc3) + '.fastq.gz >> ' + sample + '_logs/sc_pipeline_15/bc1.log')
+        bc1_command = (
+            f'echo "{bc2_list}" | time parallel --bar -j12 cutadapt -g file:{script_dir}sc_barcodes_v2/BC1_5p_anchor_v2.fa '
+            f'-e 0.2 --no-indels --overlap 7 --no-trim -o {sample}_bc1/{sample}_R1_{{name}}_bc2_{{}}_bc3_{bc3}.fastq.gz '
+            f'-p {sample}_bc1/{sample}_R2_{{name}}_bc2_{{}}_bc3_{bc3}.fastq.gz '
+            f'{sample}_bc2/{sample}_R1_bc2_{{}}_bc3_{bc3}.fastq.gz {sample}_bc2/{sample}_R2_bc2_{{}}_bc3_{bc3}.fastq.gz >> '
+            f'{sample}_logs/sc_pipeline_15/bc1.log'
+        )
+        os.system(bc1_command)
 
-#### checkpoint to be sure all bc2 files were demultiplexed
-n_R1 = len([name for name in os.listdir(sample + '_bc2') if (('R1' in name) and ('no_bc2' not in name))])
-n_R2 = len([name for name in os.listdir(sample + '_bc2') if (('R2' in name) and ('no_bc2' not in name))])
-expected_n = open(sample + '_logs/sc_pipeline_15/bc1.log', 'r').read().count("Summary")
+# Checkpoint to be sure all bc2 files were demultiplexed
+n_R1 = len([name for name in os.listdir(f'{sample}_bc2') if 'R1' in name and 'no_bc2' not in name])
+n_R2 = len([name for name in os.listdir(f'{sample}_bc2') if 'R2' in name and 'no_bc2' not in name])
+expected_n = open(f'{sample}_logs/sc_pipeline_15/bc1.log', 'r').read().count("Summary")
 if (n_R1 != expected_n) | (n_R2 != expected_n):
     print('ERROR: total demultiplexed bc1 files do not match expected input from bc2. Maybe process was disrupted?')
     quit()
 
+os.system(f'rm -r {sample}_bc2')
+if os.path.exists(f'{sample}_bc1_cumulative_frequency_table.txt'):
+    os.system(f'rm {sample}_bc1_cumulative_frequency_table.txt')
 
-os.system('rm -r ' + sample + '_bc2')
-if(os.path.exists(sample + '_bc1_cumulative_frequency_table.txt')):
-    os.system('rm ' + sample + '_bc1_cumulative_frequency_table.txt')
-
-
-preprocess.log_to_table(sample,'bc1')
-preprocess.log_plot(sample,'bc1',0)
-preprocess.freq_plot(sample,'bc1',0)
-os.system('rm ' + sample + '_bc1_table.txt')
+preprocess.log_to_table(sample, 'bc1')
+preprocess.log_plot(sample, 'bc1', 0)
+preprocess.freq_plot(sample, 'bc1', 0)
+os.system(f'rm {sample}_bc1_table.txt')
 print('bc1 done')
 
 end = time.time()
-print(end-start)
-
+print(end - start)
