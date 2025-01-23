@@ -147,7 +147,8 @@ if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc3.log'):
 # causing trouble for demultiplexing.
 bc3_command = (
     f'seq {n_lanes} | time parallel --bar -j5 cutadapt -g file:{script_dir}sc_barcodes_v2/BC3_anchored.fa '
-    f'-e 0.05 --overlap 21 --untrimmed-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R1_001.fastq.gz '
+    f'-e 0.05 --overlap 21 '
+    f'--untrimmed-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R1_001.fastq.gz '
     f'--untrimmed-paired-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R2_001.fastq.gz '
     f'-o {sample}_bc3/{sample}_{{name}}x_L00{{}}_R1_001.fastq.gz -p {sample}_bc3/{sample}_{{name}}x_L00{{}}_R2_001.fastq.gz '
     f'{sample}/{sample}_QF_UMI_L00{{}}_R1_001.fastq.gz {sample}/{sample}_QF_UMI_L00{{}}_R2_001.fastq.gz >> '
@@ -158,6 +159,7 @@ print('script dir:', script_dir)
 
 os.system(f'cd {sample}_bc3 && python {script_dir}merge_lanes_mac_compatible.py')
 print('bc3 done')
+
 
 # Demultiplex by bc2
 os.system(f'mkdir {sample}_bc2')
@@ -172,7 +174,8 @@ for i in range(1, 97):
             bc3_list = f'{bc3_list}\n{i}'
 bc2_command = (
     f'echo "{bc3_list}" | time parallel --bar -j12 cutadapt -g file:{script_dir}sc_barcodes_v2/BC2_anchored.fa '
-    f'-e 0.05 --overlap 20 --untrimmed-output {sample}_bc2/{sample}_bc1_{{}}_R1_no_bc2.fastq.gz '
+    f'-e 0.05 --overlap 20 --untrimmed-output '
+    f'{sample}_bc2/{sample}_bc1_{{}}_R1_no_bc2.fastq.gz '
     f'--untrimmed-paired-output {sample}_bc2/{sample}_bc3_{{}}_R2_no_bc2.fastq.gz '
     f'-o {sample}_bc2/{sample}_R1_{{name}}_bc3_{{}}.fastq.gz -p {sample}_bc2/{sample}_R2_{{name}}_bc3_{{}}.fastq.gz '
     f'{sample}_bc3/{sample}_bc3_{{}}x_R1_all_lanes.fastq.gz {sample}_bc3/{sample}_bc3_{{}}x_R2_all_lanes.fastq.gz >> '
@@ -208,7 +211,8 @@ for bc3 in range(1, 97):
     if bc2_list != '':
         bc1_command = (
             f'echo "{bc2_list}" | time parallel --bar -j12 cutadapt -g file:{script_dir}sc_barcodes_v2/BC1_5p_anchor_v2.fa '
-            f'-e 0.2 --no-indels --overlap 7 --no-trim -o {sample}_bc1/{sample}_R1_{{name}}_bc2_{{}}_bc3_{bc3}.fastq.gz '
+            f'-e 0.2 --no-indels --overlap 7 --discard-untrimmed --action=none '
+            f'-o {sample}_bc1/{sample}_R1_{{name}}_bc2_{{}}_bc3_{bc3}.fastq.gz '
             f'-p {sample}_bc1/{sample}_R2_{{name}}_bc2_{{}}_bc3_{bc3}.fastq.gz '
             f'{sample}_bc2/{sample}_R1_bc2_{{}}_bc3_{bc3}.fastq.gz {sample}_bc2/{sample}_R2_bc2_{{}}_bc3_{bc3}.fastq.gz >> '
             f'{sample}_logs/sc_pipeline_15/bc1.log'
