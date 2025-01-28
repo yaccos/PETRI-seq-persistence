@@ -15,9 +15,12 @@ for line in table:
     R2_file_name = f"{sample}_bc1/{sample}_R2{name[name.find('_bc1_'):len(name)]}.fastq.gz".replace(' ', '')
     if int(line.split('\t')[5]) < int(threshold):
         output.write(line)
-    elif int(line.split('\t')[2]) > 0:
-        os.system(f'rm {R1_file_name}')
-        os.system(f'rm {R2_file_name}')
+    # We remove all fastq files that are not selected even if they are empty
+    else:
+        if os.path.exists(R1_file_name):
+            os.unlink(R1_file_name)
+        if os.path.exists(R2_file_name):
+            os.unlink(R2_file_name)
 os.system(f'rm {sample}_bc1/*_unknown*')
 os.system(f'mv {sample}_bc1/ {sample}_selected_cells')
 output.close()
