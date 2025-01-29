@@ -1,0 +1,51 @@
+script_dir = f"{os.path.dirname(os.path.abspath(__file__))}/../scripts"
+barcode_dir = f"{script_dir}/sc_barcodes_v2"
+n_lanes = 1
+n_bc_idxs = 96
+bc_1 = bc_2 = bc_3 = range(1, n_bc_idxs + 1)
+sample = "random20000"
+sample_string = f"{sample}_S1"
+
+
+rule sc_pipeline:
+    input:
+        expand(
+            "{sample}/{sample_string}_L00{lane}_R{r}_001.fastq.gz",
+            lane=range(1, n_lanes + 1),
+            r=[1, 2],
+        ),
+        "{barcode_dir}/BC1_5p_anchor_v2.fa",
+        "{barcode_dir}/BC2_anchored.fa",
+        "{barcode_dir}/BC3_anchored.fa",
+    output:
+        demultiplexed_seq=expand(
+            "{sample}_bc1/{sample}_R{r}_bc1_{bc1}_bc2_{bc2}_bc3_{bc3}.fastq.gz",
+            r=[1, 2],
+        ),
+        fastqc=expand(
+            "{sample}/{sample_string}_L00{lane}_R{r}_001_fastqc.{format}",
+            lane=range(1, n_lanes + 1),
+            r=[1, 2],
+            format=["html", "zip"],
+        ),
+        knee_plot="{sample}_bc1_kneePlot.eps",
+        frequency_table="{sample}_bc1_cumulative_frequency_table.txt",
+    shell:
+        "python {script_dir}/sc_pipeline_15_generic_v2.py {n_lanes} {sample_string}"
+
+n_bcs = 100
+reference_genome = f"{script_dir}/U00096_JE2.fa"
+reference_annotation = f"{script_dir}/U00096_JE2_rRNA.gff"
+custom_name = sample
+
+rule pipeline_generic:
+    input:
+        demultiplexed_seq=expand(
+            "{sample}_bc1/{sample}_R{r}_bc1_{bc1}_bc2_{bc2}_bc3_{bc3}.fastq.gz",
+            r=[1, 2],
+        ),
+        a="{sample}_bc1_cumulative_frequency_table.txt",
+    output:
+        c="{sample}_v11_threshold_0_mixed_species_gene_matrix.txt",
+    shell:
+        "bash {script_dir}/pipeline_v2_generic.sh {sample} {n_bcs} {reference_genome} {reference_annotation} random20000"
