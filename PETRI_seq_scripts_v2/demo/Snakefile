@@ -11,8 +11,10 @@ rule sc_pipeline:
     input:
         expand(
             "{sample}/{sample_string}_L00{lane}_R{r}_001.fastq.gz",
+            sample_string=sample_string,
             lane=range(1, n_lanes + 1),
             r=[1, 2],
+            sample=sample,
         ),
         "{barcode_dir}/BC1_5p_anchor_v2.fa",
         "{barcode_dir}/BC2_anchored.fa",
@@ -21,31 +23,48 @@ rule sc_pipeline:
         demultiplexed_seq=expand(
             "{sample}_bc1/{sample}_R{r}_bc1_{bc1}_bc2_{bc2}_bc3_{bc3}.fastq.gz",
             r=[1, 2],
+            bc1=bc_1,
+            bc2=bc_2,
+            bc3=bc_3,
+            sample=sample,
         ),
         fastqc=expand(
             "{sample}/{sample_string}_L00{lane}_R{r}_001_fastqc.{format}",
+            sample_string=sample_string,
+            sample=sample,
             lane=range(1, n_lanes + 1),
             r=[1, 2],
             format=["html", "zip"],
         ),
-        knee_plot="{sample}_bc1_kneePlot.eps",
-        frequency_table="{sample}_bc1_cumulative_frequency_table.txt",
+        knee_plot=f"{sample}_bc1_kneePlot.eps",
+        frequency_table=f"{sample}_bc1_cumulative_frequency_table.txt",
     shell:
         "python {script_dir}/sc_pipeline_15_generic_v2.py {n_lanes} {sample_string}"
+
 
 n_bcs = 100
 reference_genome = f"{script_dir}/U00096_JE2.fa"
 reference_annotation = f"{script_dir}/U00096_JE2_rRNA.gff"
 custom_name = sample
 
+
 rule pipeline_generic:
     input:
+        "{sample}_bc1_cumulative_frequency_table.txt",
         demultiplexed_seq=expand(
             "{sample}_bc1/{sample}_R{r}_bc1_{bc1}_bc2_{bc2}_bc3_{bc3}.fastq.gz",
+            sample=sample,
             r=[1, 2],
+            bc1=bc_1,
+            bc2=bc_2,
+            bc3=bc_3,
         ),
-        a="{sample}_bc1_cumulative_frequency_table.txt",
     output:
-        c="{sample}_v11_threshold_0_mixed_species_gene_matrix.txt",
+        f"{custom_name}_v11_threshold_0_mixed_species_gene_matrix.txt",
     shell:
-        "bash {script_dir}/pipeline_v2_generic.sh {sample} {n_bcs} {reference_genome} {reference_annotation} random20000"
+        f"bash {script_dir}/pipeline_v2_generic.sh {sample} {n_bcs} {reference_genome} {reference_annotation} {custom_name}"
+
+
+rule all:
+    input:
+        "{custom_name}_v11_threshold_0_mixed_species_gene_matrix.txt",
