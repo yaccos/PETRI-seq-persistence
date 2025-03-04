@@ -7,6 +7,7 @@ import time
 import os
 import sys
 import preprocess_2_sc15 as preprocess
+import rpy2.robjects as robjects
 import os.path
 
 start = time.time()
@@ -49,6 +50,8 @@ fastqc_command = (
 )
 os.system(fastqc_command)
 print('Fastqc done')
+
+robjects.r.source(f'{script_dir}/demultiplexer.R')
 
 # Trim low quality reads
 trim_command = (
