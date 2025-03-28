@@ -14,8 +14,8 @@ def trim_R2(sample,ID,name,bc_to_seq):
         f'cutadapt -a "{sequence}TCTGGCGTAGGAGG;min_overlap=4" '
         f'-a "TCTGGCGTAGGAGG;min_overlap=8" '
         f'--minimum-length 16 '
-        f'-o {sample}_R2_trimmed/{R2_file_name}_R2_trimmed.fastq.gz '
-        f'{sample}_selected_cells/{R2_file_name}.fastq.gz '
+        f'-o {sample}_R2_trimmed/{R2_file_name}_R2_trimmed.fastq '
+        f'{sample}_selected_cells/{R2_file_name}.fastq '
         f'>> {sample}_logs/trim_R2_v4/trim_R2_v4.log'
     )
     os.system(cutadapt_command)

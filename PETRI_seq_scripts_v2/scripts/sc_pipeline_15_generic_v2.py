@@ -53,9 +53,9 @@ print('Fastqc done')
 # Trim low quality reads
 trim_command = (
     f'seq {n_lanes} | time parallel --bar -j4 cutadapt -q 10,10 --minimum-length 55:14 '
-    f'--max-n 3 --pair-filter=any -o {sample}/{sample}_QF_L00{{}}_R1_001.fastq.gz '
-    f'-p {sample}/{sample}_QF_L00{{}}_R2_001.fastq.gz {sample}/{sys.argv[i]}_L00{{}}_R1_001.fastq '
-    f'{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq > {sample}_logs/sc_pipeline_15/QF.log'
+    f'--max-n 3 --pair-filter=any -o {sample}/{sample}_QF_L00{{}}_R1_001.fastq '
+    f'-p {sample}/{sample}_QF_L00{{}}_R2_001.fastq {sample}/{sys.argv[i]}_L00{{}}_R1_001.fastq.gz '
+    f'{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq.gz > {sample}_logs/sc_pipeline_15/QF.log'
 )
 os.system(trim_command)
 
