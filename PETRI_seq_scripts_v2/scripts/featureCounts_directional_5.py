@@ -34,7 +34,7 @@ def pipeline(sample,ID,name,gff):
     
     umi_tools_command = (
         f'umi_tools group --per-gene --gene-tag=XT -I {sample}_FC/{R2_file_name}_no_XT_sorted.bam.featureCounts.bam '
-        f'--group-out={sample}_FC_directional_grouped_2/{R2_file_name}_UMI_counts.tsv.gz '
+        f'--group-out={sample}_FC_directional_grouped_2/{R2_file_name}_UMI_counts.tsv '
         f'--method=directional --output-bam -S {sample}_FC_directional_grouped_2/{R2_file_name}_group_FC.bam '
         f'>> {old_sample}_logs/featureCounts_directional_5/{sample}_umi_group.log'
     )

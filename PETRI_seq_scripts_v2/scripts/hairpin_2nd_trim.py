@@ -20,8 +20,8 @@ def trim_R2(sample,ID,name,bc1_to_seq):
     full_seq = f"{bc3_sequence}GGTCCTTGGCTTCGC{bc2_sequence}CCTCCTACGCCAGA{bc1_sequence}"
     cutadapt_command = (
         f"cutadapt -b {full_seq} -O 7 -e 0.2 --minimum-length 16 "
-        f"-o {sample}_2nd_trim/{R2_file_name}_2trim.fastq.gz "
-        f"{sample}_R2_trimmed/{R2_file_name}_R2_trimmed.fastq.gz "
+        f"-o {sample}_2nd_trim/{R2_file_name}_2trim.fastq "
+        f"{sample}_R2_trimmed/{R2_file_name}_R2_trimmed.fastq "
         f">> {sample}_logs/2nd_trim/2nd_trim.log"
     )
     os.system(cutadapt_command)

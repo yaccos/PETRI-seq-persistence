@@ -56,8 +56,8 @@ robjects.r.source(f'{script_dir}/demultiplexer.R')
 # Trim low quality reads
 trim_command = (
     f'seq {n_lanes} | time parallel --bar -j4 cutadapt -q 10,10 --minimum-length 55:14 '
-    f'--max-n 3 --pair-filter=any -o {sample}/{sample}_QF_L00{{}}_R1_001.fastq.gz '
-    f'-p {sample}/{sample}_QF_L00{{}}_R2_001.fastq.gz {sample}/{sys.argv[i]}_L00{{}}_R1_001.fastq.gz '
+    f'--max-n 3 --pair-filter=any -o {sample}/{sample}_QF_L00{{}}_R1_001.fastq '
+    f'-p {sample}/{sample}_QF_L00{{}}_R2_001.fastq {sample}/{sys.argv[i]}_L00{{}}_R1_001.fastq.gz '
     f'{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq.gz > {sample}_logs/sc_pipeline_15/QF.log'
 )
 os.system(trim_command)
@@ -66,76 +66,68 @@ print('Quality Trim Done')
 
 # Use pear to match read 1 and read 2; for those that overlap, remove reads less than 75bp
 pear_command = (
-    f'seq {n_lanes} | time parallel --bar -j5 pear -f {sample}/{sample}_QF_L00{{}}_R1_001.fastq.gz '
-    f'-r {sample}/{sample}_QF_L00{{}}_R2_001.fastq.gz -o {sample}/{sample}_QF_L00{{}}_p -v 8 -p 0.001 -n 0'
+    f'seq {n_lanes} | time parallel --bar -j5 pear -f {sample}/{sample}_QF_L00{{}}_R1_001.fastq '
+    f'-r {sample}/{sample}_QF_L00{{}}_R2_001.fastq -o {sample}/{sample}_QF_L00{{}}_p -v 8 -p 0.001 -n 0'
 )
 os.system(pear_command)
 
 cutadapt_command = (
-    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -m 75 -o {sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq.gz '
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -m 75 -o {sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq '
     f'{sample}/{sample}_QF_L00{{}}_p.assembled.fastq'
 )
 os.system(cutadapt_command)
 
 # Split paired reads back into two files of read 1 (58 bases) and read 2 (remaining sequence - reverse comp)
 split_r1_command = (
-    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -l 58 -o {sample}/{sample}_QF_L00{{}}_R1_paired.fastq.gz '
-    f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq.gz'
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -l 58 -o {sample}/{sample}_QF_L00{{}}_R1_paired.fastq '
+    f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq'
 )
 os.system(split_r1_command)
 
 split_r2_command = (
-    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -u 58 -o {sample}/{sample}_QF_L00{{}}_preR2_paired.fastq.gz '
-    f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq.gz'
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -u 58 -o {sample}/{sample}_QF_L00{{}}_preR2_paired.fastq '
+    f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq'
 )
 os.system(split_r2_command)
 reverse_comp_command = (
     f'seq {n_lanes} | time parallel --bar -j4 seqkit seq -r -p -t DNA '
-    f'{sample}/{sample}_QF_L00{{}}_preR2_paired.fastq.gz -o {sample}/{sample}_QF_L00{{}}_R2_paired.fastq.gz'
+    f'{sample}/{sample}_QF_L00{{}}_preR2_paired.fastq -o {sample}/{sample}_QF_L00{{}}_R2_paired.fastq'
 )
 os.system(reverse_comp_command)
 
 # Merge back the reads that overlapped by pear and those that didn't to get clean non-overlapping reads 1 and 2
-gzip_forward_command = (
-    f'seq {n_lanes} | time parallel --bar -j4 gzip {sample}/{sample}_QF_L00{{}}_p.unassembled.forward.fastq'
-)
-os.system(gzip_forward_command)
 
-gzip_reverse_command = (
-    f'seq {n_lanes} | time parallel --bar -j4 gzip {sample}/{sample}_QF_L00{{}}_p.unassembled.reverse.fastq'
-)
-os.system(gzip_reverse_command)
 for l in range(1, n_lanes + 1):
     merge_r1_command = (
-        f'gunzip -c {sample}/{sample}_QF_L00{l}_p.unassembled.forward.fastq.gz '
-        f'{sample}/{sample}_QF_L00{l}_R1_paired.fastq.gz | gzip > {sample}/{sample}_QF_merged_L00{l}_R1.fastq.gz'
+        f'cat {sample}/{sample}_QF_L00{l}_p.unassembled.forward.fastq '
+        f'{sample}/{sample}_QF_L00{l}_R1_paired.fastq > {sample}/{sample}_QF_merged_L00{l}_R1.fastq'
     )
     os.system(merge_r1_command)
     merge_r2_command = (
-        f'gunzip -c {sample}/{sample}_QF_L00{l}_p.unassembled.reverse.fastq.gz '
-        f'{sample}/{sample}_QF_L00{l}_R2_paired.fastq.gz | gzip > {sample}/{sample}_QF_merged_L00{l}_R2.fastq.gz'
+        f'cat {sample}/{sample}_QF_L00{l}_p.unassembled.reverse.fastq '
+        f'{sample}/{sample}_QF_L00{l}_R2_paired.fastq > {sample}/{sample}_QF_merged_L00{l}_R2.fastq'
     )
     os.system(merge_r2_command)
 
 # Extract UMI
 umi_command = (
-    f'seq {n_lanes} | time parallel --bar -j5 umi_tools extract --stdin={sample}/{sample}_QF_merged_L00{{}}_R1.fastq.gz '
-    f'--bc-pattern=NNNNNNN --read2-in={sample}/{sample}_QF_merged_L00{{}}_R2.fastq.gz '
-    f'--log={sample}_logs/sc_pipeline_15/UMI_extract.log --stdout {sample}/{sample}_QF_UMI_L00{{}}_R1_001.fastq.gz '
-    f'--read2-out={sample}/{sample}_QF_UMI_L00{{}}_R2_001.fastq.gz'
+    f'seq {n_lanes} | time parallel --bar -j5 umi_tools extract --stdin={sample}/{sample}_QF_merged_L00{{}}_R1.fastq '
+    f'--bc-pattern=NNNNNNN --read2-in={sample}/{sample}_QF_merged_L00{{}}_R2.fastq '
+    f'--log={sample}_logs/sc_pipeline_15/UMI_extract.log --stdout {sample}/{sample}_QF_UMI_L00{{}}_R1_001.fastq '
+    f'--read2-out={sample}/{sample}_QF_UMI_L00{{}}_R2_001.fastq'
 )
 os.system(umi_command)
 
 # Remove intermediate files
 remove_intermediate_commands = [
-    f'rm -r {sample}/{sample}*p.unassembled.forward.fastq.gz',
-    f'rm -r {sample}/{sample}*p.unassembled.reverse.fastq.gz',
-    f'rm -r {sample}/{sample}*_paired_min75_001.fastq.gz',
-    f'rm -r {sample}/{sample}*preR2_paired.fastq.gz',
+    f'rm -r {sample}/{sample}*p.unassembled.forward.fastq',
+    f'rm -r {sample}/{sample}*p.unassembled.reverse.fastq',
+    f'rm -r {sample}/{sample}*_paired_min75_001.fastq',
+    f'rm -r {sample}/{sample}*preR2_paired.fastq',
     f'rm -r {sample}/{sample}*_p.assembled.fastq',
     f'rm -r {sample}/{sample}*_p.discarded.fastq',
-    f'rm -r {sample}/{sample}*_R1_paired.fastq.gz',
-    f'rm -r {sample}/{sample}*_R2_paired.fastq.gz'
+    f'rm -r {sample}/{sample}*_R1_paired.fastq',
+    f'rm -r {sample}/{sample}*_R2_paired.fastq'
 ]
 
 for cmd in remove_intermediate_commands:
@@ -151,10 +143,10 @@ if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc3.log'):
 bc3_command = (
     f'seq {n_lanes} | time parallel --bar -j5 cutadapt -g file:{script_dir}sc_barcodes_v2/BC3_anchored.fa '
     f'-e 0.05 --overlap 21 '
-    f'--untrimmed-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R1_001.fastq.gz '
-    f'--untrimmed-paired-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R2_001.fastq.gz '
-    f'-o {sample}_bc3/{sample}_{{name}}x_L00{{}}_R1_001.fastq.gz -p {sample}_bc3/{sample}_{{name}}x_L00{{}}_R2_001.fastq.gz '
-    f'{sample}/{sample}_QF_UMI_L00{{}}_R1_001.fastq.gz {sample}/{sample}_QF_UMI_L00{{}}_R2_001.fastq.gz >> '
+    f'--untrimmed-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R1_001.fastq '
+    f'--untrimmed-paired-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R2_001.fastq '
+    f'-o {sample}_bc3/{sample}_{{name}}x_L00{{}}_R1_001.fastq -p {sample}_bc3/{sample}_{{name}}x_L00{{}}_R2_001.fastq '
+    f'{sample}/{sample}_QF_UMI_L00{{}}_R1_001.fastq {sample}/{sample}_QF_UMI_L00{{}}_R2_001.fastq >> '
     f'{sample}_logs/sc_pipeline_15/bc3.log'
 )
 os.system(bc3_command)
@@ -170,7 +162,7 @@ if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc2.log'):
     os.system(f'rm {sample}_logs/sc_pipeline_15/bc2.log')
 bc3_list = ''
 for i in range(1, 97):
-    if os.path.exists(f'{sample}_bc3/{sample}_bc3_{i}x_R1_all_lanes.fastq.gz'):
+    if os.path.exists(f'{sample}_bc3/{sample}_bc3_{i}x_R1_all_lanes.fastq'):
         if bc3_list == '':
             bc3_list = str(i)
         else:
@@ -178,10 +170,10 @@ for i in range(1, 97):
 bc2_command = (
     f'echo "{bc3_list}" | time parallel --bar -j12 cutadapt -g file:{script_dir}sc_barcodes_v2/BC2_anchored.fa '
     f'-e 0.05 --overlap 20 --untrimmed-output '
-    f'{sample}_bc2/{sample}_bc1_{{}}_R1_no_bc2.fastq.gz '
-    f'--untrimmed-paired-output {sample}_bc2/{sample}_bc3_{{}}_R2_no_bc2.fastq.gz '
-    f'-o {sample}_bc2/{sample}_R1_{{name}}_bc3_{{}}.fastq.gz -p {sample}_bc2/{sample}_R2_{{name}}_bc3_{{}}.fastq.gz '
-    f'{sample}_bc3/{sample}_bc3_{{}}x_R1_all_lanes.fastq.gz {sample}_bc3/{sample}_bc3_{{}}x_R2_all_lanes.fastq.gz >> '
+    f'{sample}_bc2/{sample}_bc1_{{}}_R1_no_bc2.fastq '
+    f'--untrimmed-paired-output {sample}_bc2/{sample}_bc3_{{}}_R2_no_bc2.fastq '
+    f'-o {sample}_bc2/{sample}_R1_{{name}}_bc3_{{}}.fastq -p {sample}_bc2/{sample}_R2_{{name}}_bc3_{{}}.fastq '
+    f'{sample}_bc3/{sample}_bc3_{{}}x_R1_all_lanes.fastq {sample}_bc3/{sample}_bc3_{{}}x_R2_all_lanes.fastq >> '
     f'{sample}_logs/sc_pipeline_15/bc2.log'
 )
 os.system(bc2_command)
@@ -205,7 +197,7 @@ if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc1.log'):
 for bc3 in range(1, 97):
     bc2_list = ''
     for bc2 in range(1, 97):
-        if os.path.exists(f'{sample}_bc2/{sample}_R1_bc2_{bc2}_bc3_{bc3}.fastq.gz'):
+        if os.path.exists(f'{sample}_bc2/{sample}_R1_bc2_{bc2}_bc3_{bc3}.fastq'):
             if bc2_list == '':
                 bc2_list = str(bc2)
             else:
@@ -215,9 +207,9 @@ for bc3 in range(1, 97):
         bc1_command = (
             f'echo "{bc2_list}" | time parallel --bar -j12 cutadapt -g file:{script_dir}sc_barcodes_v2/BC1_5p_anchor_v2.fa '
             f'-e 0.2 --no-indels --overlap 7 --discard-untrimmed --action=none '
-            f'-o {sample}_bc1/{sample}_R1_{{name}}_bc2_{{}}_bc3_{bc3}.fastq.gz '
-            f'-p {sample}_bc1/{sample}_R2_{{name}}_bc2_{{}}_bc3_{bc3}.fastq.gz '
-            f'{sample}_bc2/{sample}_R1_bc2_{{}}_bc3_{bc3}.fastq.gz {sample}_bc2/{sample}_R2_bc2_{{}}_bc3_{bc3}.fastq.gz >> '
+            f'-o {sample}_bc1/{sample}_R1_{{name}}_bc2_{{}}_bc3_{bc3}.fastq '
+            f'-p {sample}_bc1/{sample}_R2_{{name}}_bc2_{{}}_bc3_{bc3}.fastq '
+            f'{sample}_bc2/{sample}_R1_bc2_{{}}_bc3_{bc3}.fastq {sample}_bc2/{sample}_R2_bc2_{{}}_bc3_{bc3}.fastq >> '
             f'{sample}_logs/sc_pipeline_15/bc1.log'
         )
         os.system(bc1_command)

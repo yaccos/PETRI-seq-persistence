@@ -11,8 +11,8 @@ next(table)
 
 for line in table:
     name = line.split('\t')[1]
-    R1_file_name = f"{sample}_bc1/{sample}_R1{name[name.find('_bc1_'):len(name)]}.fastq.gz".replace(' ', '')
-    R2_file_name = f"{sample}_bc1/{sample}_R2{name[name.find('_bc1_'):len(name)]}.fastq.gz".replace(' ', '')
+    R1_file_name = f"{sample}_bc1/{sample}_R1{name[name.find('_bc1_'):len(name)]}.fastq".replace(' ', '')
+    R2_file_name = f"{sample}_bc1/{sample}_R2{name[name.find('_bc1_'):len(name)]}.fastq".replace(' ', '')
     if int(line.split('\t')[5]) < int(threshold):
         output.write(line)
     # We remove all fastq files that are not selected even if they are empty
