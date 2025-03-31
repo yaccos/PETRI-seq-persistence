@@ -51,8 +51,6 @@ fastqc_command = (
 os.system(fastqc_command)
 print('Fastqc done')
 
-robjects.r.source(f'{script_dir}/demultiplexer.R')
-
 # Trim low quality reads
 trim_command = (
     f'seq {n_lanes} | time parallel --bar -j4 cutadapt -q 10,10 --minimum-length 55:14 '
@@ -132,6 +130,13 @@ remove_intermediate_commands = [
 
 for cmd in remove_intermediate_commands:
     os.system(cmd)
+
+quit()
+
+robjects.robjects.globalenv['n_lanes'] = n_lanes
+robjects.robjects.globalenv['script_dir'] = script_dir
+
+robjects.r.source(f'{script_dir}/demultiplexer.R')
 
 # Demultiplex by bc3
 os.system(f'mkdir {sample}_bc3')
