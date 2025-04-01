@@ -12,21 +12,13 @@ then
 	mkdir ${sample}_logs
 fi
 
-if [ -d "${sample}_bc1" ]
+num=1
+if [! -d "${sample}_selected_frequency_table.txt" ]
 then
-	python $dir/remove_cells_v1.py ${sample} ${n_BCs} # Select cells based on threshold (knee plot); n_BCs is the number of cells to use for additional analysis (typically 10000-40000)
-	echo "selecting ${n_BCs} cells"
-	num=1
-	msg="selected ${n_BCs} cells"
-elif [ -d "${sample}_selected_cells" ]
-then
-	echo "Directory ${sample}_bc1 does not exist but ${sample}_selected_cells already exists; using previously selected cells"
-	num=1	
-	msg="PLEASE NOTE: used previously selected cells, n_BCs of ${n_BCs} ignored!"
-else
-	echo "Directory ${sample}_bc1 does not exist. Maybe need to run sc_pipeline_11.py?"
+	echo "File ${sample}_selected_frequency_table.txt does not exist. Maybe need to run demultiplexer.R"
 	num=0
 fi
+
 if [ $num -gt 0 ]
 then
 	python $dir/trim_R2_v4.py ${sample} # trim bc1 and linker sequences from read 2; discard reads less than 17 bp

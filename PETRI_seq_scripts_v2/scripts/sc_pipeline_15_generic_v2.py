@@ -22,16 +22,7 @@ n_lanes = int(sys.argv[2])
 # Clean up old files
 cleanup_commands = [
     f'rm -r {sample}/*QF_* 2> /dev/null',
-    f'rm -r {sample}_bc3 2> /dev/null',
-    f'rm -r {sample}_bc2 2> /dev/null',
-    f'rm -r {sample}_bc1 2> /dev/null',
-    f'rm -r {sample}_bc1_table.txt 2> /dev/null',
-    f'rm -r {sample}_bc2_table.txt 2> /dev/null',
-    f'rm -r {sample}_bc3_table.txt 2> /dev/null',
     f'rm -r {sample}_logs/sc_pipeline_15 2> /dev/null',
-    f'rm -r {sample}_bc1_cumulative_frequency_table.txt 2> /dev/null',
-    f'rm -r {sample}_bc2_cumulative_frequency_table.txt 2> /dev/null',
-    f'rm -r {sample}_bc3_cumulative_frequency_table.txt 2> /dev/null'
 ]
 
 for cmd in cleanup_commands:
@@ -137,106 +128,6 @@ robjects.robjects.globalenv['n_lanes'] = n_lanes
 robjects.robjects.globalenv['script_dir'] = script_dir
 
 robjects.r.source(f'{script_dir}/demultiplexer.R')
-
-# Demultiplex by bc3
-os.system(f'mkdir {sample}_bc3')
-if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc3.log'):
-    os.system(f'rm {sample}_logs/sc_pipeline_15/bc3.log')
-
-# Note: bc3 adapter sequences are 23 nt long. The error rate is set to 0.05, but this creates ambiguities
-# causing trouble for demultiplexing.
-bc3_command = (
-    f'seq {n_lanes} | time parallel --bar -j5 cutadapt -g file:{script_dir}sc_barcodes_v2/BC3_anchored.fa '
-    f'-e 0.05 --overlap 21 '
-    f'--untrimmed-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R1_001.fastq '
-    f'--untrimmed-paired-output {sample}_bc3/{sample}_no_bc3_L00{{}}_R2_001.fastq '
-    f'-o {sample}_bc3/{sample}_{{name}}x_L00{{}}_R1_001.fastq -p {sample}_bc3/{sample}_{{name}}x_L00{{}}_R2_001.fastq '
-    f'{sample}/{sample}_QF_UMI_L00{{}}_R1_001.fastq {sample}/{sample}_QF_UMI_L00{{}}_R2_001.fastq >> '
-    f'{sample}_logs/sc_pipeline_15/bc3.log'
-)
-os.system(bc3_command)
-print('script dir:', script_dir)
-
-os.system(f'cd {sample}_bc3 && python {script_dir}merge_lanes_mac_compatible.py')
-print('bc3 done')
-
-
-# Demultiplex by bc2
-os.system(f'mkdir {sample}_bc2')
-if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc2.log'):
-    os.system(f'rm {sample}_logs/sc_pipeline_15/bc2.log')
-bc3_list = ''
-for i in range(1, 97):
-    if os.path.exists(f'{sample}_bc3/{sample}_bc3_{i}x_R1_all_lanes.fastq'):
-        if bc3_list == '':
-            bc3_list = str(i)
-        else:
-            bc3_list = f'{bc3_list}\n{i}'
-bc2_command = (
-    f'echo "{bc3_list}" | time parallel --bar -j12 cutadapt -g file:{script_dir}sc_barcodes_v2/BC2_anchored.fa '
-    f'-e 0.05 --overlap 20 --untrimmed-output '
-    f'{sample}_bc2/{sample}_bc1_{{}}_R1_no_bc2.fastq '
-    f'--untrimmed-paired-output {sample}_bc2/{sample}_bc3_{{}}_R2_no_bc2.fastq '
-    f'-o {sample}_bc2/{sample}_R1_{{name}}_bc3_{{}}.fastq -p {sample}_bc2/{sample}_R2_{{name}}_bc3_{{}}.fastq '
-    f'{sample}_bc3/{sample}_bc3_{{}}x_R1_all_lanes.fastq {sample}_bc3/{sample}_bc3_{{}}x_R2_all_lanes.fastq >> '
-    f'{sample}_logs/sc_pipeline_15/bc2.log'
-)
-os.system(bc2_command)
-print('bc2 done')
-
-# Checkpoint to be sure all bc3 files were demultiplexed
-n_R1 = len([name for name in os.listdir(f'{sample}_bc3') if 'R1' in name and 'no_bc3' not in name])
-n_R2 = len([name for name in os.listdir(f'{sample}_bc3') if 'R2' in name and 'no_bc3' not in name])
-bc2_log = open(f'{sample}_logs/sc_pipeline_15/bc2.log', 'r').read()
-expected_n = bc2_log.count("Summary") + bc2_log.count("No reads processed!")
-if (n_R1 != expected_n) | (n_R2 != expected_n):
-    print('ERROR: total demultiplexed bc2 files do not match expected input from bc3. Maybe process was disrupted?')
-    quit()
-
-os.system(f'rm -r {sample}_bc3')
-
-# Demultiplex by bc1
-os.system(f'mkdir {sample}_bc1')
-if os.path.exists(f'{sample}_logs/sc_pipeline_15/bc1.log'):
-    os.system(f'rm {sample}_logs/sc_pipeline_15/bc1.log')
-for bc3 in range(1, 97):
-    bc2_list = ''
-    for bc2 in range(1, 97):
-        if os.path.exists(f'{sample}_bc2/{sample}_R1_bc2_{bc2}_bc3_{bc3}.fastq'):
-            if bc2_list == '':
-                bc2_list = str(bc2)
-            else:
-                bc2_list = f'{bc2_list}\n{bc2}'
-    print(bc3)
-    if bc2_list != '':
-        bc1_command = (
-            f'echo "{bc2_list}" | time parallel --bar -j12 cutadapt -g file:{script_dir}sc_barcodes_v2/BC1_5p_anchor_v2.fa '
-            f'-e 0.2 --no-indels --overlap 7 --discard-untrimmed --action=none '
-            f'-o {sample}_bc1/{sample}_R1_{{name}}_bc2_{{}}_bc3_{bc3}.fastq '
-            f'-p {sample}_bc1/{sample}_R2_{{name}}_bc2_{{}}_bc3_{bc3}.fastq '
-            f'{sample}_bc2/{sample}_R1_bc2_{{}}_bc3_{bc3}.fastq {sample}_bc2/{sample}_R2_bc2_{{}}_bc3_{bc3}.fastq >> '
-            f'{sample}_logs/sc_pipeline_15/bc1.log'
-        )
-        os.system(bc1_command)
-
-# Checkpoint to be sure all bc2 files were demultiplexed
-n_R1 = len([name for name in os.listdir(f'{sample}_bc2') if 'R1' in name and 'no_bc2' not in name])
-n_R2 = len([name for name in os.listdir(f'{sample}_bc2') if 'R2' in name and 'no_bc2' not in name])
-bc_1_log = open(f'{sample}_logs/sc_pipeline_15/bc1.log', 'r').read()
-expected_n = bc_1_log.count("Summary") + bc_1_log.count("No reads processed!")
-if (n_R1 != expected_n) | (n_R2 != expected_n):
-    print('ERROR: total demultiplexed bc1 files do not match expected input from bc2. Maybe process was disrupted?')
-    quit()
-
-os.system(f'rm -r {sample}_bc2')
-if os.path.exists(f'{sample}_bc1_cumulative_frequency_table.txt'):
-    os.system(f'rm {sample}_bc1_cumulative_frequency_table.txt')
-
-preprocess.log_to_table(sample, 'bc1')
-preprocess.log_plot(sample, 'bc1', 0)
-preprocess.freq_plot(sample, 'bc1', 0)
-os.system(f'rm {sample}_bc1_table.txt')
-print('bc1 done')
 
 end = time.time()
 print(f"Time elapsed during Python pipeline: {end - start}")
