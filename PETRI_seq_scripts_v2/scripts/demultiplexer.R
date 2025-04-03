@@ -91,8 +91,8 @@ ggsave(filename = "{sample}_kneePlot.pdf" |> glue(), plot = knee_plot)
 
 select_reads_from_cutoff <- function(filtered_res, bc_cutoff) {
     retained_reads <- filtered_res$retained
-    freq_table <- create_frequency_table(filtered_res$demultiplex_res$assigned_barcode)
-    barcode_table <- filtered_res$demultiplex_res$assigned_barcode |> as.data.frame()
+    freq_table <- create_frequency_table(filtered_res$demultiplex_res$assigned_barcodes)
+    barcode_table <- filtered_res$demultiplex_res$assigned_barcodes |> as.data.frame()
     selected_freq_table <- freq_table[freq_table$cumulative_frequency <= bc_cutoff, ]
     barcodes_to_keep <- selected_freq_table[colnames(barcode_table)]
     barcode_table$rowID <- seq_len(nrow(barcode_table))
@@ -116,8 +116,54 @@ write.table(
     col.names = TRUE
 )
 
-# forward_sequences_to_keep  <- forward_sequences[reads_to_keep]
+forward_sequences_to_keep  <- forward_sequences[reads_to_keep]
 reverse_sequences_to_keep <- reverse_sequences[reads_to_keep]
+selected_assigned_barcodes  <- demultiplex_res$assigned_barcodes[reads_to_keep, ]
 
-# This is the reverse compliment of the adapter found between BC2 and BC3
-trimming_adapter_sequence <- "TCTGGCGTAGGAGG"
+bc1_stringset <- bc_frame$stringset[[1]]
+bc1_selected_assigned_barcodes  <- selected_assigned_barcodes[, "bc1", drop=TRUE]
+
+imap(bc1_stringset, function(bc_string, bc_name) {
+    # This is the reverse compliment of the adapter found between BC1 and BC2
+    trimming_adapter_sequence <- "TCTGGCGTAGGAGG"
+    this_sequences <- reverse_sequences_to_keep[bc1_selected_assigned_barcodes == bc_name]
+    this_reverse_sequences  <- reverseComplement(this_sequences)
+
+    adapter_match  <- Biostrings::vmatchPattern(pattern = trimming_adapter_sequence,
+     subject = this_reverse_sequences,
+     max.mismatch = 1L,
+     with.indels = TRUE
+    )
+
+    barcode_adapter_match  <- Biostrings::vmatchPattern(
+        pattern = xscat(trimming_adapter_sequence, bc_string),
+     subject = this_reverse_sequences,
+     max.mismatch = 2L,
+     with.indels = TRUE
+    )
+
+    extract_first_match  <- function(match_object) {
+        match_lengths <- lengths(match_object)
+        res  <- rep(NA_integer_, length(this_sequences))
+        sequences_with_match  <- match_lengths > 0L
+        res[sequences_with_match] <- map_int(match_object[sequences_with_match] |> startIndex(), 1L)
+        res
+    }
+
+    match_results <- map(list(adapter_match, barcode_adapter_match), extract_first_match)
+    first_combined_match  <- do.call(what = pmin, args = c(match_results, na.rm=TRUE))
+
+
+
+
+
+
+
+
+
+
+}
+)
+
+
+
