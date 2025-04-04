@@ -123,21 +123,21 @@ selected_assigned_barcodes  <- demultiplex_res$assigned_barcodes[reads_to_keep, 
 bc1_stringset <- bc_frame$stringset[[1]]
 bc1_selected_assigned_barcodes  <- selected_assigned_barcodes[, "bc1", drop=TRUE]
 
-imap(bc1_stringset, function(bc_string, bc_name) {
+
+bc1_trimmed_R2_list <- imap(reverseComplement(bc1_stringset), function(bc_string, bc_name) {
     # This is the reverse compliment of the adapter found between BC1 and BC2
     trimming_adapter_sequence <- "TCTGGCGTAGGAGG"
     this_sequences <- reverse_sequences_to_keep[bc1_selected_assigned_barcodes == bc_name]
-    this_reverse_sequences  <- reverseComplement(this_sequences)
 
     adapter_match  <- Biostrings::vmatchPattern(pattern = trimming_adapter_sequence,
-     subject = this_reverse_sequences,
+     subject = this_sequences,
      max.mismatch = 1L,
      with.indels = TRUE
     )
 
     barcode_adapter_match  <- Biostrings::vmatchPattern(
-        pattern = xscat(trimming_adapter_sequence, bc_string),
-     subject = this_reverse_sequences,
+        pattern = xscat(bc_string, trimming_adapter_sequence),
+     subject = this_sequences,
      max.mismatch = 2L,
      with.indels = TRUE
     )
@@ -151,19 +151,20 @@ imap(bc1_stringset, function(bc_string, bc_name) {
     }
 
     match_results <- map(list(adapter_match, barcode_adapter_match), extract_first_match)
-    first_combined_match  <- do.call(what = pmin, args = c(match_results, na.rm=TRUE))
+    first_combined_match  <- rlang::exec(pmin, !!! match_results, na.rm=TRUE)
 
-
-
-
-
-
-
-
-
-
+    this_trimmed_sequences  <- this_sequences
+    sequences_to_trim  <- !is.na(first_combined_match)
+    this_trimmed_sequences[sequences_to_trim] <- subseq(sequences, end = first_combined_match[sequences_to_trim] - 1L)
+    this_trimmed_sequences
 }
 )
 
-
+bc1_trimmed_R2  <- rlang::exec(c, !!! bc1_trimmed_R2_list)
+# Remove reads shorter than 16 nt
+bc1_min_R2_length  <- 16L
+bc1_seq_too_short  <- width(bc1_trimmed_R2) < bc1_min_R2_length
+bc1_trimmed_R1 <- bc1_trimmed_R1[!bc1_seq_too_short]
+bc1_trimmed_R2 <- bc1_trimmed_R2[!bc1_seq_too_short]
+writeQualityScaledXStringSet(filepath = "{sample}_R2_trimmed.fastq" |> glue(),compress = FALSE)
 
