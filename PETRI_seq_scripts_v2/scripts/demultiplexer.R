@@ -90,7 +90,6 @@ ggsave(filename = "{sample}_kneePlot.pdf" |> glue(), plot = knee_plot)
 
 
 select_reads_from_cutoff <- function(filtered_res, bc_cutoff) {
-    retained_reads <- filtered_res$retained
     freq_table <- create_frequency_table(filtered_res$demultiplex_res$assigned_barcodes)
     barcode_table <- filtered_res$demultiplex_res$assigned_barcodes |> as.data.frame()
     selected_freq_table <- freq_table[freq_table$cumulative_frequency <= bc_cutoff, ]
@@ -102,7 +101,7 @@ select_reads_from_cutoff <- function(filtered_res, bc_cutoff) {
     retained_reads[kept_reads] <- TRUE
     # The resulting reads must have a barcode frequent enough AND have a number of mismatches below the
     # selected threshold
-    list(retained_reads = retained_reads & filtered_res$retained_reads, frequency_table = selected_freq_table)
+    list(retained_reads = retained_reads & filtered_res$retained, frequency_table = selected_freq_table)
 }
 
 selection_res <- select_reads_from_cutoff(filtered_res, bc_cutoff)
@@ -123,8 +122,7 @@ selected_assigned_barcodes  <- demultiplex_res$assigned_barcodes[reads_to_keep, 
 bc1_stringset <- bc_frame$stringset[[1]]
 bc1_selected_assigned_barcodes  <- selected_assigned_barcodes[, "bc1", drop=TRUE]
 
-
-bc1_trimmed_R2_list <- imap(reverseComplement(bc1_stringset), function(bc_string, bc_name) {
+trim_bc1_from_stringset  <- function(bc_string, bc_name) {
     # This is the reverse compliment of the adapter found between BC1 and BC2
     trimming_adapter_sequence <- "TCTGGCGTAGGAGG"
     this_sequences <- reverse_sequences_to_keep[bc1_selected_assigned_barcodes == bc_name]
@@ -132,14 +130,14 @@ bc1_trimmed_R2_list <- imap(reverseComplement(bc1_stringset), function(bc_string
     adapter_match  <- Biostrings::vmatchPattern(pattern = trimming_adapter_sequence,
      subject = this_sequences,
      max.mismatch = 1L,
-     with.indels = TRUE
+     with.indels = FALSE
     )
 
     barcode_adapter_match  <- Biostrings::vmatchPattern(
         pattern = xscat(bc_string, trimming_adapter_sequence),
      subject = this_sequences,
      max.mismatch = 2L,
-     with.indels = TRUE
+     with.indels = FALSE
     )
 
     extract_first_match  <- function(match_object) {
@@ -155,16 +153,17 @@ bc1_trimmed_R2_list <- imap(reverseComplement(bc1_stringset), function(bc_string
 
     this_trimmed_sequences  <- this_sequences
     sequences_to_trim  <- !is.na(first_combined_match)
-    this_trimmed_sequences[sequences_to_trim] <- subseq(sequences, end = first_combined_match[sequences_to_trim] - 1L)
+    this_trimmed_sequences[sequences_to_trim] <- subseq(this_sequences[sequences_to_trim], end = first_combined_match[sequences_to_trim] - 1L)
     this_trimmed_sequences
 }
-)
 
-bc1_trimmed_R2  <- rlang::exec(c, !!! bc1_trimmed_R2_list)
+
+bc1_trimmed_R2_list <- imap(reverseComplement(bc1_stringset), trim_bc1_from_stringset)
+
+bc1_trimmed_R2  <- rlang::exec(c, !!! unname(bc1_trimmed_R2_list))
 # Remove reads shorter than 16 nt
 bc1_min_R2_length  <- 16L
 bc1_seq_too_short  <- width(bc1_trimmed_R2) < bc1_min_R2_length
-bc1_trimmed_R1 <- bc1_trimmed_R1[!bc1_seq_too_short]
+bc1_trimmed_R1 <- forward_sequences_to_keep[!bc1_seq_too_short]
 bc1_trimmed_R2 <- bc1_trimmed_R2[!bc1_seq_too_short]
-writeQualityScaledXStringSet(filepath = "{sample}_R2_trimmed.fastq" |> glue(),compress = FALSE)
-
+writeQualityScaledXStringSet(bc1_trimmed_R2, filepath = "{sample}/{sample}_R2_trimmed.fastq" |> glue(), compress = FALSE)
