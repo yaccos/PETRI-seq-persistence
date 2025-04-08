@@ -180,53 +180,34 @@ cat("After this trim, {n_sequences_too_short} ({percent_sequences_too_short |> r
  sequences were removed because they became too short\n\n" |> glue())
 writeQualityScaledXStringSet(bc1_trimmed_R2, filepath = "{sample}/{sample}_R2_trimmed.fastq" |> glue(), compress = FALSE)
 
-message("Trimming hairpins from R2")
+message("Removing hairpins from R2")
 
-trim_hairpins_from_stringset  <- function(...) {
-    bc_names <- list(...)
-    bc_strings  <- map2(bc_frame$stringset, bc_names, function(stringset, name) stringset[[name]])
+trim_hairpins_from_stringset  <- function(bc2_string, bc2_name) {
     # These sequences are *not* reverse compliments, but are aimed at hairpins
     bc3_to_bc2_adapter <- "GGTCCTTGGCTTCGC"
     bc2_to_bc1_adapter <- "CCTCCTACGCCAGA"
-    combined_string  <- xscat(bc_strings$bc3, bc3_to_bc2_adapter, bc_strings$bc2, bc2_to_bc1_adapter, bc_strings$bc1)
+    combined_string  <- xscat(bc3_to_bc2_adapter, bc2_string, bc2_to_bc1_adapter)
 
-    sequences_with_bc <- imap(bc_names, function(bc, set_name) selected_assigned_barcodes[names(bc1_trimmed_R2), set_name] == bc)
-    this_sequences <- bc1_trimmed_R2[Reduce(`&`, sequences_with_bc)]
+    sequences_with_bc <- bc2_selected_assigned_barcodes[names(bc1_trimmed_R2)] == bc2_name
+    this_sequences <- bc1_trimmed_R2[sequences_with_bc]
 
-    barcode_adapter_match  <- Biostrings::vmatchPattern(
+    barcode_adapter_match  <- Biostrings::vcountPattern(
         pattern = combined_string,
      subject = this_sequences,
-     max.mismatch = 5L,
-     with.indels = FALSE
+     max.mismatch = 1L,
+     with.indels = TRUE
     )
 
-    extract_first_match  <- function(match_object) {
-        match_lengths <- lengths(match_object)
-        res  <- rep(NA_integer_, length(this_sequences))
-        sequences_with_match  <- match_lengths > 0L
-        res[sequences_with_match] <- map_int(match_object[sequences_with_match] |> startIndex(), 1L)
-        res
-    }
-
-    match_results <- extract_first_match(barcode_adapter_match)
-
-    this_trimmed_sequences  <- this_sequences
-    sequences_to_trim  <- !is.na(match_results)
-    this_trimmed_sequences[sequences_to_trim] <- subseq(this_sequences[sequences_to_trim], end = match_results[sequences_to_trim] - 1L)
-    list(sequences=this_trimmed_sequences, trim_count=sum(sequences_to_trim))
+    hairpin_detected  <- barcode_adapter_match != 0L
+    this_trimmed_sequences  <- this_sequences[!hairpin_detected]
+    list(sequences=this_trimmed_sequences, trim_count=sum(hairpin_detected))
 }
 
-hairpin_trim <- pmap(selected_frequency_table[glue("bc{1:3}")], trim_hairpins_from_stringset)
-hairpin_trim_seq  <- rlang::exec(c, !!! unname(hairpin_trim) |> map("sequences"))
+bc2_stringset <- bc_frame$stringset[[2]]
+bc2_selected_assigned_barcodes  <- selected_assigned_barcodes[, "bc2", drop=TRUE]
+hairpin_trim <- imap(bc2_stringset, trim_hairpins_from_stringset)
+hairpin_trimmed_R2  <- rlang::exec(c, !!! unname(hairpin_trim) |> map("sequences"))
 hairpin_trim_count  <- hairpin_trim  |> map_int("trim_count") |> sum()
-# Remove reads shorter than 16 nt
-hairpin_min_length  <- 16L
-hairpin_seq_too_short  <- width(hairpin_trim_seq) < hairpin_min_length
-hairpin_trimmed_R2 <- bc1_trimmed_R2[!hairpin_seq_too_short]
 trim_percentage <- hairpin_trim_count / length(bc1_trimmed_R2) * 100
-n_sequences_too_short <- sum(hairpin_seq_too_short)
-percent_sequences_too_short <- n_sequences_too_short / length(hairpin_seq_too_short) * 100
-cat("Trimmed hairpin barcode and adapters from {hairpin_trim_count} ({trim_percentage |> round(2L)}%) sequences\n\n" |> glue())
-cat("After this trim, {n_sequences_too_short} ({percent_sequences_too_short |> round(2L)}%) \\
- sequences were removed because they became too short\n\n" |> glue())
+cat("Removed reads with hairpins from {hairpin_trim_count} ({trim_percentage |> round(2L)}%) sequences\n\n" |> glue())
 writeQualityScaledXStringSet(hairpin_trimmed_R2, filepath = "{sample}/{sample}_2trim.fastq" |> glue(), compress = FALSE)

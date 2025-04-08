@@ -21,8 +21,6 @@ fi
 
 if [ $num -gt 0 ]
 then
-	python $dir/trim_R2_v4.py ${sample} # trim bc1 and linker sequences from read 2; discard reads less than 17 bp
-	python $dir/hairpin_2nd_trim.py ${sample} # trim revcomp bc1 and linker sequences (from hairpins)
 	if [ ! -f "${fasta}.bwt" ]
 	then
 		bwa index ${fasta}
