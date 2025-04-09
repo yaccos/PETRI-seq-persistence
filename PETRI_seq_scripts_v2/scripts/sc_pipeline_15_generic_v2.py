@@ -122,10 +122,8 @@ remove_intermediate_commands = [
 for cmd in remove_intermediate_commands:
     os.system(cmd)
 
-quit()
-
-robjects.robjects.globalenv['n_lanes'] = n_lanes
-robjects.robjects.globalenv['script_dir'] = script_dir
+robjects.globalenv['n_lanes'] = n_lanes
+robjects.globalenv['script_dir'] = script_dir
 
 robjects.r.source(f'{script_dir}/demultiplexer.R')
 

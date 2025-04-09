@@ -13,7 +13,7 @@ then
 fi
 
 num=1
-if [! -d "${sample}_selected_frequency_table.txt" ]
+if [ ! -f "${sample}_selected_frequency_table.txt" ]
 then
 	echo "File ${sample}_selected_frequency_table.txt does not exist. Maybe need to run demultiplexer.R"
 	num=0
@@ -25,7 +25,11 @@ then
 	then
 		bwa index ${fasta}
 	fi
-	python $dir/align_HiSeq_after_hairpin_trim_v2.py ${sample} ${fasta} ${sample} # align read 2 to genomes
+
+	bwa aln -n 0.06 ${fasta} ${sample}/${sample}_2trim.fastq > ${sample}/${sample}_bwa_sai.sai
+	bwa samse -n 14 ${fasta} ${sample}/${sample}_bwa_sai.sai ${sample}/${sample}_2trim.fastq > ${sample}/${sample}_bwa_sam.sam
+	exit
+	# python $dir/align_HiSeq_after_hairpin_trim_v2.py ${sample} ${fasta} ${sample} # align read 2 to genomes
 	python $dir/featureCounts_directional_5.py ${sample} ${custom_name} ${sample} ${gff} # annotate features from gff and identify UMI groups
 	python $dir/sc_sam_processor_11_generic.py 0 ${custom_name} ${sample} # generates a single file of collapsed UMIs (output suffix is _filtered_mapped_UMIs.txt})
 	python $dir/make_matrix_mixed_species.py ${custom_name}_v11_threshold_0 # make matrix from filtered UMIs
