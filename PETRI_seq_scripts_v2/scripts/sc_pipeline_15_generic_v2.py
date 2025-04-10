@@ -124,6 +124,7 @@ for cmd in remove_intermediate_commands:
 
 robjects.globalenv['n_lanes'] = n_lanes
 robjects.globalenv['script_dir'] = script_dir
+robjects.globalenv['sample'] = sample
 
 robjects.r.source(f'{script_dir}/demultiplexer.R')
 

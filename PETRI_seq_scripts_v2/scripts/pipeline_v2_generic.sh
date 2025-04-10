@@ -26,10 +26,16 @@ then
 		bwa index ${fasta}
 	fi
 
-	bwa aln -n 0.06 ${fasta} ${sample}/${sample}_2trim.fastq > ${sample}/${sample}_bwa_sai.sai
-	bwa samse -n 14 ${fasta} ${sample}/${sample}_bwa_sai.sai ${sample}/${sample}_2trim.fastq > ${sample}/${sample}_bwa_sam.sam
+	bwa aln -n 0.06 ${fasta} ${sample}/${sample}_2trim.fastq > ${sample}/${sample}_bwa.sai
+	bwa samse -n 14 ${fasta} ${sample}/${sample}_bwa.sai ${sample}/${sample}_2trim.fastq > ${sample}/${sample}_bwa.sam
+	sed "s/XT:/XN:/" ${sample}/${sample}_bwa.sam > ${sample}/${sample}_no_XT.sam # Removes the XT tag from the sam file because it reportably interfer with featureCount
+	samtools view -bS ${sample}/${sample}_no_XT.sam | samtools sort - > ${sample}/${sample}_sorted.bam
+	samtools index ${sample}/${sample}_sorted.bam
+	mkdir ${sample}_FC
+	featureCounts -t 'Coding_or_RNA' -g 'name' -s 1 -a ${gff} -o ${sample}_FC/${sample} -R BAM ${sample}/${sample}_sorted.bam # annotate features from gff
+	samtools index ${sample}_FC/${sample}_sorted.bam.featureCounts.bam
 	exit
-	python $dir/featureCounts_directional_5.py ${sample} ${gff} # annotate features from gff and identify UMI groups
+	python $dir/featureCounts_directional_5.py ${sample} # identify UMI groups
 	python $dir/sc_sam_processor_11_generic.py 0 ${custom_name} ${sample} # generates a single file of collapsed UMIs (output suffix is _filtered_mapped_UMIs.txt})
 	python $dir/make_matrix_mixed_species.py ${custom_name}_v11_threshold_0 # make matrix from filtered UMIs
 	## Below are cleanup steps - comment out to see intermediate files
