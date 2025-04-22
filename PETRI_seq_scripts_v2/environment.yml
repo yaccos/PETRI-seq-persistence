@@ -23,6 +23,8 @@ dependencies:
   - r-languageserver
   - rpy2
   - bioconductor-biostrings
+  - bioconductor-genomicalignments
+  - bioconductor-rtracklayer
   - r-dplyr
   - r-ggplot2
   - r-shiny
