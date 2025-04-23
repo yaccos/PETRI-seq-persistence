@@ -37,13 +37,12 @@ then
 	Rscript ${dir}/add_cell_barcode.R $sample
 	mkdir ${sample}_FC_directional_grouped_2/
 	mkdir ${sample}_logs/featureCounts_directional_5
-	umi_tools group --per-gene --gene-tag=XT --per-cell --cell-tag=CB --extract-umi-method=read_id \
+	umi_tools group --per-gene --gene-tag=XT --per-cell --cell-tag=CB --extract-umi-method=tag --umi-tag=BX \
 	-I ${sample}_FC/${sample}_sorted.bam.featureCounts_with_celltag.bam \
         --group-out=${sample}_FC_directional_grouped_2/${sample}_UMI_counts.tsv \
         --method=directional --output-bam -S ${sample}_FC_directional_grouped_2/${sample}_group_FC.bam \
         >> ${sample}_logs/featureCounts_directional_5/${sample}_umi_group.log
 	exit
-	python $dir/featureCounts_directional_5.py ${sample} # identify UMI groups
 	python $dir/sc_sam_processor_11_generic.py 0 ${custom_name} ${sample} # generates a single file of collapsed UMIs (output suffix is _filtered_mapped_UMIs.txt})
 	python $dir/make_matrix_mixed_species.py ${custom_name}_v11_threshold_0 # make matrix from filtered UMIs
 	## Below are cleanup steps - comment out to see intermediate files

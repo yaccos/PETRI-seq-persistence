@@ -98,15 +98,6 @@ for l in range(1, n_lanes + 1):
     )
     os.system(merge_r2_command)
 
-# Extract UMI
-umi_command = (
-    f'seq {n_lanes} | time parallel --bar -j5 umi_tools extract --stdin={sample}/{sample}_QF_merged_L00{{}}_R1.fastq '
-    f'--bc-pattern=NNNNNNN --read2-in={sample}/{sample}_QF_merged_L00{{}}_R2.fastq '
-    f'--log={sample}_logs/sc_pipeline_15/UMI_extract.log --stdout {sample}/{sample}_QF_UMI_L00{{}}_R1_001.fastq '
-    f'--read2-out={sample}/{sample}_QF_UMI_L00{{}}_R2_001.fastq'
-)
-os.system(umi_command)
-
 # Remove intermediate files
 remove_intermediate_commands = [
     f'rm -r {sample}/{sample}*p.unassembled.forward.fastq',

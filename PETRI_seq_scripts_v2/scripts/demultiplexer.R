@@ -20,16 +20,19 @@ barcode_file_prefix <- glue("{script_dir}/sc_barcodes_v2/")
 
 barcode_file_name_main <- c("BC1_5p_anchor_v2.fa", "BC2_anchored.fa", "BC3_anchored.fa")
 
+input_file <- glue("{sample}/{sample}_QF_merged_L001_R1.fastq")
 
-input_file <- glue("{sample}/{sample}_QF_UMI_L001_R1_001.fastq")
+# input_file <- glue("{sample}/{sample}_QF_UMI_L001_R1_001.fastq")
 
-paired_input_file <- glue("{sample}/{sample}_QF_UMI_L001_R2_001.fastq")
+# paired_input_file <- glue("{sample}/{sample}_QF_UMI_L001_R2_001.fastq")
+
+paired_input_file <- glue("{sample}/{sample}_QF_merged_L001_R2.fastq")
 
 output_table_file <- glue("{sample}_barcode_table.txt")
 
-sequence_annotation <- c("B", "A", "B", "A", "B", "A")
+sequence_annotation <- c(UMI="P","B", "A", "B", "A", "B", "A")
 
-segment_lengths <- c(7L, 15L, 7L, 14L, 7L, NA_integer_)
+segment_lengths <- c(7L, 7L, 15L, 7L, 14L, 7L, NA_integer_)
 
 min_sequence_length <- sum(head(segment_lengths, -1L))
 
@@ -67,8 +70,9 @@ demultiplex_res <- posDemux::combinatorial_demultiplex(
 filtered_res <- filter_demultiplex_res(demultiplex_res, allowed_mismatches = ALLOWED_MISMATCHES)
 
 res_table <- as.data.frame(filtered_res$demultiplex_res$assigned_barcodes)
+res_table$UMI  <- filtered_res$demultiplex_res$payload$UMI  |> as.character()
 res_table$read <- rownames(res_table)
-res_table <- res_table[, c(4L, 1L, 2L, 3L)]
+res_table <- res_table[, c("read", "UMI", "bc3", "bc2", "bc1")]
 
 write.table(res_table,
     output_table_file,
