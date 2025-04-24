@@ -8,6 +8,7 @@ gene_matrix = (table[['contig:gene','UMI']].
                count().
                unstack(level='Cell Barcode').
                fillna(0).
+               astype(int).
                transpose().
                droplevel(0).
                filter(regex="^(?!.*ambiguous).*$") # We filter away the columns *not* containing 'ambiguous' by using a negative lookahead
