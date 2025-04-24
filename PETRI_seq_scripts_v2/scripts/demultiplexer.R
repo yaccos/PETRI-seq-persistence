@@ -7,10 +7,6 @@ library(dplyr)
 library(ggplot2)
 library(posDemux)
 
-# These lines do not really belong here, but are used to debug and test the script in isolation
-# sample <- "random20000"
-# script_dir <- "/home/japet/Dokumenter/drug_presister_project/PETRI-seq-persistence/PETRI_seq_scripts_v2/demo/../scripts"
-
 BARCODE_WIDTH <- 7L
 ALLOWED_MISMATCHES <- 1L
 
@@ -21,10 +17,6 @@ barcode_file_prefix <- glue("{script_dir}/sc_barcodes_v2/")
 barcode_file_name_main <- c("BC1_5p_anchor_v2.fa", "BC2_anchored.fa", "BC3_anchored.fa")
 
 input_file <- glue("{sample}/{sample}_QF_merged_L001_R1.fastq")
-
-# input_file <- glue("{sample}/{sample}_QF_UMI_L001_R1_001.fastq")
-
-# paired_input_file <- glue("{sample}/{sample}_QF_UMI_L001_R2_001.fastq")
 
 paired_input_file <- glue("{sample}/{sample}_QF_merged_L001_R2.fastq")
 

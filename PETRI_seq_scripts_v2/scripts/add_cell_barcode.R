@@ -8,10 +8,6 @@ args  <- commandArgs(trailingOnly = TRUE)
 
 sample  <- args[1]
 
-# These lines do not really belong here, but are used to debug and test the script in isolation
-#sample <- "random20000"
-#script_dir <- "/home/japet/Dokumenter/drug_presister_project/PETRI-seq-persistence/PETRI_seq_scripts_v2/demo/../scripts"
-
 bam_file  <- glue("{sample}_FC/{sample}_sorted.bam.featureCounts.bam")
 barcode_index_file  <- glue("{sample}_barcode_table.txt")
 
