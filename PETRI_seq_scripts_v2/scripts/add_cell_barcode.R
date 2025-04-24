@@ -1,5 +1,5 @@
-# This script is intended to add a tag CB containing the cell barcode to a BAM file
-# processed through featureCounts
+# This script is intended to add a tag CB containing the cell barcode and a tag BX containing the UMI
+# to a BAM file processed through featureCounts
 library(GenomicAlignments)
 library(glue)
 library(rtracklayer)

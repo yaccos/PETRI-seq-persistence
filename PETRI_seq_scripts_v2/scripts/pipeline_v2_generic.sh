@@ -42,7 +42,7 @@ then
         --group-out=${sample}_FC_directional_grouped_2/${sample}_UMI_counts.tsv \
         --method=directional --output-bam -S ${sample}_FC_directional_grouped_2/${sample}_group_FC.bam \
         >> ${sample}_logs/featureCounts_directional_5/${sample}_umi_group.log
-	exit
+	samtools view ${sample}_FC_directional_grouped_2/${sample}_group_FC.bam > ${sample}_FC_directional_grouped_2/${sample}_group_FC.sam
 	python $dir/sc_sam_processor_11_generic.py 0 ${custom_name} ${sample} # generates a single file of collapsed UMIs (output suffix is _filtered_mapped_UMIs.txt})
 	python $dir/make_matrix_mixed_species.py ${custom_name}_v11_threshold_0 # make matrix from filtered UMIs
 	## Below are cleanup steps - comment out to see intermediate files
@@ -53,5 +53,4 @@ then
 	rm -r ${custom_name}_no_XT # sam and bam files without XT tag (generated during featureCounts_directional_5)
 	rm -r ${custom_name}_FC # bam files after feature counts (featureCounts_directional_5)
 	rm -r ${custom_name}_FC_directional_grouped_2 # bam files after umi tools group (featureCounts_directional_5)
-	echo $msg
 fi
