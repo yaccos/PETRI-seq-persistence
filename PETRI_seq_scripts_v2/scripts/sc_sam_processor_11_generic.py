@@ -5,10 +5,6 @@ import re
 version = 11
 threshold = int(sys.argv[1])
 sample = sys.argv[2]
-if len(sys.argv) > 3:
-    ID = sys.argv[3]
-else:
-    ID = sample
 
 
 def get_tag(line, tag):
@@ -70,7 +66,7 @@ def get_alignment_status(line):
 
 UMIgene_to_count = {}
 
-sam = open(f'{sample}_FC_directional_grouped_2/{sample}_group_FC.sam', 'r')
+sam = open(f'results/{sample}_FC_directional_grouped_2/{sample}_group_FC.sam', 'r')
 
 for line in sam:
         cell_barcode = get_tag(line, "CB")
@@ -92,7 +88,7 @@ for line in sam:
 
 sam.close()
 
-output = open(f'{sample}_v{version}_threshold_{threshold}_filtered_mapped_UMIs.txt', 'w')
+output = open(f'results/{sample}_v{version}_threshold_{threshold}_filtered_mapped_UMIs.txt', 'w')
 output.write('Cell Barcode\tUMI\tcontig:gene\ttotal_reads\n')
 
 for cell_barcode, count_dict in UMIgene_to_count.items():

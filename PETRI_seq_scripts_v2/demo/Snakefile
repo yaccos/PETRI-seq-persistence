@@ -1,6 +1,11 @@
 # script_dir = f"{os.path.dirname(os.path.abspath(__file__))}/../scripts"
+import os
+def change_ext(filename, new_ext):
+    base, _ = os.path.splitext(filename)
+    return base + new_ext
+
 script_dir = f"../scripts"
-barcode_dir = f"{script_dir}/sc_barcodes_v2"
+barcode_dir = f"data/sc_barcodes_v2"
 n_lanes = 1
 n_bc_idxs = 96
 bc_1 = bc_2 = bc_3 = range(1, n_bc_idxs + 1)
@@ -13,7 +18,7 @@ n_bcs = 100
 rule sc_pipeline:
     input:
         expand(
-            "{sample}/{sample_string}_L00{lane}_R{r}_001.fastq.gz",
+            "data/{sample}/{sample_string}_L00{lane}_R{r}_001.fastq.gz",
             sample_string=sample_string,
             lane=range(1, n_lanes + 1),
             r=[1, 2],
@@ -23,38 +28,50 @@ rule sc_pipeline:
         f"{barcode_dir}/BC2_anchored.fa",
         f"{barcode_dir}/BC3_anchored.fa",
     output:
-        barcode_table=f"{sample}_barcode_table.txt",
+        barcode_table=f"results/{sample}_barcode_table.txt",
         trimmed_sequences=expand(
-            "{sample}/{sample}_2trim.fastq",
+            "results/{sample}/{sample}_2trim.fastq",
             sample=sample,
         ),
         fastqc=expand(
-            "{sample}/{sample_string}_L00{lane}_R{r}_001_fastqc.{format}",
+            "results/{sample}/{sample_string}_L00{lane}_R{r}_001_fastqc.{format}",
             sample_string=sample_string,
             sample=sample,
             lane=range(1, n_lanes + 1),
             r=[1, 2],
             format=["html", "zip"],
         ),
-        knee_plot=f"{sample}_kneePlot.pdf",
-        histogram=f"{sample}_ReadsPerBC.pdf",
-        frequency_table=f"{sample}_selected_frequency_table.txt",
+        knee_plot=f"results/{sample}_kneePlot.pdf",
+        histogram=f"results/{sample}_ReadsPerBC.pdf",
+        frequency_table=f"results/{sample}_selected_frequency_table.txt",
     shell:
         f"python {script_dir}/sc_pipeline_15_generic_v2.py {sample_string} {n_lanes} "
 
+reference_genome = f"data/U00096_JE2.fa"
+indexed_reference_genome = change_ext(reference_genome, ".bwt")
 
-reference_genome = f"{script_dir}/U00096_JE2.fa"
-reference_annotation = f"{script_dir}/U00096_JE2_rRNA.gff"
+
+reference_annotation = f"data/U00096_JE2_rRNA.gff"
 
 sc_out = rules.sc_pipeline.output
 
+rule bwa_index:
+    input:
+        "{genome}.fa"
+    output:
+        "{genome}.bwt"
+    shell:
+        "bwa index {wildcards.genome}.fa"
 
 rule pipeline_generic:
     input:
         sc_out.trimmed_sequences,
         sc_out.barcode_table,
+        reference_genome,
+        indexed_reference_genome,
+        reference_annotation
     output:
-        count_matrix=f"{sample}_v11_threshold_0_mixed_species_gene_matrix.txt",
+        count_matrix=f"results/{sample}_v11_threshold_0_mixed_species_gene_matrix.txt",
     shell:
         f"bash {script_dir}/pipeline_v2_generic.sh {sample} {reference_genome} {reference_annotation}"
 
@@ -65,3 +82,4 @@ rule all:
         sc_out.knee_plot,
         sc_out.histogram,
         sc_out.fastqc,
+

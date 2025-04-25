@@ -6,9 +6,7 @@
 import time
 import os
 import sys
-import preprocess_2_sc15 as preprocess
 import rpy2.robjects as robjects
-import os.path
 
 start = time.time()
 script_dir = sys.argv[0].split(sys.argv[0].split('/')[-1])[0]
@@ -18,25 +16,12 @@ if sys.argv[i].find('_S') == -1:
     raise ValueError('Must include _S after sample')
 n_lanes = int(sys.argv[2])
 
-# Clean up old files
-cleanup_commands = [
-    f'rm -r {sample}/*QF_* 2> /dev/null',
-    f'rm -r {sample}_logs/sc_pipeline_15 2> /dev/null',
-]
-
-for cmd in cleanup_commands:
-    os.system(cmd)
-
-os.system(f'mkdir {sample}_logs')
-os.system(f'mkdir {sample}_logs/sc_pipeline_15')
-
 print(f'Preprocessing {sample}')
 
 # Run Fastqc on all lanes
-os.system(f'mkdir {sample}_logs/sc_pipeline_15/fastqc')
 fastqc_command = (
-    f'ls {sample}/*_001.fastq.gz | time parallel --bar --results '
-    f'{sample}_logs/sc_pipeline_15/fastqc -j8 fastqc {{}}'
+    f'ls {sample}/*_001.fastq.gz | time parallel --bar '
+    f'-j8 fastqc {{}}'
 )
 os.system(fastqc_command)
 print('Fastqc done')
@@ -46,7 +31,7 @@ trim_command = (
     f'seq {n_lanes} | time parallel --bar -j4 cutadapt -q 10,10 --minimum-length 55:14 '
     f'--max-n 3 --pair-filter=any -o {sample}/{sample}_QF_L00{{}}_R1_001.fastq '
     f'-p {sample}/{sample}_QF_L00{{}}_R2_001.fastq {sample}/{sys.argv[i]}_L00{{}}_R1_001.fastq.gz '
-    f'{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq.gz > {sample}_logs/sc_pipeline_15/QF.log'
+    f'{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq.gz'
 )
 os.system(trim_command)
 
@@ -97,20 +82,6 @@ for l in range(1, n_lanes + 1):
     )
     os.system(merge_r2_command)
 
-# Remove intermediate files
-remove_intermediate_commands = [
-    f'rm -r {sample}/{sample}*p.unassembled.forward.fastq',
-    f'rm -r {sample}/{sample}*p.unassembled.reverse.fastq',
-    f'rm -r {sample}/{sample}*_paired_min75_001.fastq',
-    f'rm -r {sample}/{sample}*preR2_paired.fastq',
-    f'rm -r {sample}/{sample}*_p.assembled.fastq',
-    f'rm -r {sample}/{sample}*_p.discarded.fastq',
-    f'rm -r {sample}/{sample}*_R1_paired.fastq',
-    f'rm -r {sample}/{sample}*_R2_paired.fastq'
-]
-
-for cmd in remove_intermediate_commands:
-    os.system(cmd)
 
 robjects.globalenv['n_lanes'] = n_lanes
 robjects.globalenv['script_dir'] = script_dir
