@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 
 sample = sys.argv[1]
+print(sample)
 table = pd.read_csv(sample + '_filtered_mapped_UMIs.txt',sep='\t',index_col=0)
 gene_matrix = (table[['contig:gene','UMI']].
                groupby(['Cell Barcode','contig:gene']).

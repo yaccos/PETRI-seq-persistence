@@ -15,8 +15,7 @@ script_dir = sys.argv[0].split(sys.argv[0].split('/')[-1])[0]
 i = 1
 sample = sys.argv[i][0:sys.argv[i].find('_S')]
 if sys.argv[i].find('_S') == -1:
-    print('error: must include _S after sample')
-    exit()
+    raise ValueError('Must include _S after sample')
 n_lanes = int(sys.argv[2])
 
 # Clean up old files

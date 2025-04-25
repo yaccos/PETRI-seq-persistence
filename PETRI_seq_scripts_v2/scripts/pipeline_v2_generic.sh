@@ -2,10 +2,8 @@
 
 dir=$(echo $0 | sed "s/pipeline_v2_generic.sh//")
 sample=$1
-n_BCs=$2
-fasta=$3
-gff=$4
-custom_name=$5
+fasta=$2
+gff=$3
 
 if [ ! -d "${sample}_logs" ]
 then
