@@ -21,7 +21,7 @@ print(f'Preprocessing {sample}')
 # Run Fastqc on all lanes
 fastqc_command = (
     f'ls data/{sample}/*_001.fastq.gz | time parallel --bar '
-    f'-j8 fastqc {{}}'
+    f'-j8 fastqc {{}} -o results/{sample}'
 )
 os.system(fastqc_command)
 print('Fastqc done')

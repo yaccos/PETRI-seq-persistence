@@ -12,9 +12,6 @@ bc_1 = bc_2 = bc_3 = range(1, n_bc_idxs + 1)
 sample = "random20000"
 sample_string = f"{sample}_S1"
 
-n_bcs = 100
-
-
 rule sc_pipeline:
     input:
         expand(
@@ -48,7 +45,7 @@ rule sc_pipeline:
         f"python {script_dir}/sc_pipeline_15_generic_v2.py {sample_string} {n_lanes} "
 
 reference_genome = f"data/U00096_JE2.fa"
-indexed_reference_genome = change_ext(reference_genome, ".bwt")
+indexed_reference_genome = reference_genome + ".bwt"
 
 
 reference_annotation = f"data/U00096_JE2_rRNA.gff"
@@ -59,7 +56,7 @@ rule bwa_index:
     input:
         "{genome}.fa"
     output:
-        "{genome}.bwt"
+        "{genome}.fa.bwt"
     shell:
         "bwa index {wildcards.genome}.fa"
 
