@@ -18,16 +18,6 @@ n_lanes = int(sys.argv[2])
 
 print(f'Preprocessing {sample}')
 
-# Trim low quality reads
-trim_command = (
-    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -q 10,10 --minimum-length 55:14 '
-    f'--max-n 3 --pair-filter=any -o results/{sample}/{sample}_QF_L00{{}}_R1_001.fastq '
-    f'-p results/{sample}/{sample}_QF_L00{{}}_R2_001.fastq data/{sample}/{sys.argv[i]}_L00{{}}_R1_001.fastq.gz '
-    f'data/{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq.gz'
-)
-os.system(trim_command)
-
-print('Quality Trim Done')
 
 # Use pear to match read 1 and read 2; for those that overlap, remove reads less than 75bp
 pear_command = (

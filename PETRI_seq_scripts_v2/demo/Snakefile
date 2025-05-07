@@ -20,6 +20,13 @@ input_fastq = expand(
             sample=sample,
         )
 
+trimmed_fastq = expand(
+    "results/{sample}/{sample}_QF_L00{lane}_R2_001.fastq",
+    lane=range(1, n_lanes + 1),
+    r=[1, 2],
+    sample=sample
+)
+
 fastqc_output = expand(
             "results/{sample}/{sample_string}_L00{lane}_R{r}_001_fastqc.{format}",
             sample_string=sample_string,
@@ -38,9 +45,24 @@ rule fastqc:
         f'fastqc {input} -o results/{sample}'
 
 
+rule quality_trim:
+    # reverse is reserved for internal use by Snakemake, so we have to rewrite it
+    input:
+        forward = f"data/{sample}/{sample_string}_L00{{lane}}_R1_001.fastq.gz",
+        reverse_seq = f"data/{sample}/{sample_string}_L00{{lane}}_R2_001.fastq.gz"
+    output:
+        forward = "results/{sample}/{sample}_QF_L00{lane}_R1_001.fastq",
+        reverse_seq = "results/{sample}/{sample}_QF_L00{lane}_R2_001.fastq"
+    shell:
+        f'cutadapt -q 10,10 --minimum-length 55:14 --max-n 3 --pair-filter=any '\
+        f'-o {output.forward} -p {output.reverse_seq} '\
+        f'{input.forward} {input.reverse_seq}'
+
+
+
 rule sc_pipeline:
     input:
-        input_fastq,
+        trimmed_fastq,
         f"{barcode_dir}/BC1_5p_anchor_v2.fa",
         f"{barcode_dir}/BC2_anchored.fa",
         f"{barcode_dir}/BC3_anchored.fa",
