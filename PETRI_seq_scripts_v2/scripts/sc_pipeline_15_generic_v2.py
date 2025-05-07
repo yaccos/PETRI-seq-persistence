@@ -18,14 +18,6 @@ n_lanes = int(sys.argv[2])
 
 print(f'Preprocessing {sample}')
 
-# Run Fastqc on all lanes
-fastqc_command = (
-    f'ls data/{sample}/*_001.fastq.gz | time parallel --bar '
-    f'-j8 fastqc {{}} -o results/{sample}'
-)
-os.system(fastqc_command)
-print('Fastqc done')
-
 # Trim low quality reads
 trim_command = (
     f'seq {n_lanes} | time parallel --bar -j4 cutadapt -q 10,10 --minimum-length 55:14 '

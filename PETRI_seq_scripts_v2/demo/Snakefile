@@ -12,15 +12,35 @@ bc_1 = bc_2 = bc_3 = range(1, n_bc_idxs + 1)
 sample = "random20000"
 sample_string = f"{sample}_S1"
 
-rule sc_pipeline:
-    input:
-        expand(
+input_fastq = expand(
             "data/{sample}/{sample_string}_L00{lane}_R{r}_001.fastq.gz",
             sample_string=sample_string,
             lane=range(1, n_lanes + 1),
             r=[1, 2],
             sample=sample,
-        ),
+        )
+
+fastqc_output = expand(
+            "results/{sample}/{sample_string}_L00{lane}_R{r}_001_fastqc.{format}",
+            sample_string=sample_string,
+            sample=sample,
+            lane=range(1, n_lanes + 1),
+            r=[1, 2],
+            format=["html", "zip"],
+        )
+
+rule fastqc:
+    input:
+        f"data/{sample}/{{fastq_name}}.fastq.gz"
+    output:
+        expand("results/{sample}/{{fastq_name}}_fastqc.{format}", sample=sample, format=["html", "zip"])
+    shell:
+        f'fastqc {input} -o results/{sample}'
+
+
+rule sc_pipeline:
+    input:
+        input_fastq,
         f"{barcode_dir}/BC1_5p_anchor_v2.fa",
         f"{barcode_dir}/BC2_anchored.fa",
         f"{barcode_dir}/BC3_anchored.fa",
@@ -29,14 +49,6 @@ rule sc_pipeline:
         trimmed_sequences=expand(
             "results/{sample}/{sample}_2trim.fastq",
             sample=sample,
-        ),
-        fastqc=expand(
-            "results/{sample}/{sample_string}_L00{lane}_R{r}_001_fastqc.{format}",
-            sample_string=sample_string,
-            sample=sample,
-            lane=range(1, n_lanes + 1),
-            r=[1, 2],
-            format=["html", "zip"],
         ),
         knee_plot=f"results/{sample}_kneePlot.pdf",
         histogram=f"results/{sample}_ReadsPerBC.pdf",
@@ -78,6 +90,6 @@ rule all:
         rules.pipeline_generic.output.count_matrix,
         sc_out.knee_plot,
         sc_out.histogram,
-        sc_out.fastqc
+        fastqc_output
 
 
