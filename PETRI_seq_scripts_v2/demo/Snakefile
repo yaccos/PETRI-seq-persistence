@@ -81,5 +81,6 @@ rule all:
         rules.pipeline_generic.output.count_matrix,
         sc_out.knee_plot,
         sc_out.histogram,
-        sc_out.fastqc,
+        sc_out.fastqc
+
 

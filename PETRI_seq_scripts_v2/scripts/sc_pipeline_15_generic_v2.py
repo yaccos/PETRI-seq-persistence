@@ -20,7 +20,7 @@ print(f'Preprocessing {sample}')
 
 # Run Fastqc on all lanes
 fastqc_command = (
-    f'ls {sample}/*_001.fastq.gz | time parallel --bar '
+    f'ls data/{sample}/*_001.fastq.gz | time parallel --bar '
     f'-j8 fastqc {{}}'
 )
 os.system(fastqc_command)
@@ -29,9 +29,9 @@ print('Fastqc done')
 # Trim low quality reads
 trim_command = (
     f'seq {n_lanes} | time parallel --bar -j4 cutadapt -q 10,10 --minimum-length 55:14 '
-    f'--max-n 3 --pair-filter=any -o {sample}/{sample}_QF_L00{{}}_R1_001.fastq '
-    f'-p {sample}/{sample}_QF_L00{{}}_R2_001.fastq {sample}/{sys.argv[i]}_L00{{}}_R1_001.fastq.gz '
-    f'{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq.gz'
+    f'--max-n 3 --pair-filter=any -o results/{sample}/{sample}_QF_L00{{}}_R1_001.fastq '
+    f'-p results/{sample}/{sample}_QF_L00{{}}_R2_001.fastq data/{sample}/{sys.argv[i]}_L00{{}}_R1_001.fastq.gz '
+    f'data/{sample}/{sys.argv[i]}_L00{{}}_R2_001.fastq.gz'
 )
 os.system(trim_command)
 
@@ -39,32 +39,32 @@ print('Quality Trim Done')
 
 # Use pear to match read 1 and read 2; for those that overlap, remove reads less than 75bp
 pear_command = (
-    f'seq {n_lanes} | time parallel --bar -j5 pear -f {sample}/{sample}_QF_L00{{}}_R1_001.fastq '
-    f'-r {sample}/{sample}_QF_L00{{}}_R2_001.fastq -o {sample}/{sample}_QF_L00{{}}_p -v 8 -p 0.001 -n 0'
+    f'seq {n_lanes} | time parallel --bar -j5 pear -f results/{sample}/{sample}_QF_L00{{}}_R1_001.fastq '
+    f'-r results/{sample}/{sample}_QF_L00{{}}_R2_001.fastq -o results/{sample}/{sample}_QF_L00{{}}_p -v 8 -p 0.001 -n 0'
 )
 os.system(pear_command)
 
 cutadapt_command = (
-    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -m 75 -o {sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq '
-    f'{sample}/{sample}_QF_L00{{}}_p.assembled.fastq'
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -m 75 -o results/{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq '
+    f'results/{sample}/{sample}_QF_L00{{}}_p.assembled.fastq'
 )
 os.system(cutadapt_command)
 
 # Split paired reads back into two files of read 1 (58 bases) and read 2 (remaining sequence - reverse comp)
 split_r1_command = (
-    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -l 58 -o {sample}/{sample}_QF_L00{{}}_R1_paired.fastq '
-    f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq'
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -l 58 -o results/{sample}/{sample}_QF_L00{{}}_R1_paired.fastq '
+    f'results/{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq'
 )
 os.system(split_r1_command)
 
 split_r2_command = (
-    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -u 58 -o {sample}/{sample}_QF_L00{{}}_preR2_paired.fastq '
-    f'{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq'
+    f'seq {n_lanes} | time parallel --bar -j4 cutadapt -u 58 -o results/{sample}/{sample}_QF_L00{{}}_preR2_paired.fastq '
+    f'results/{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq'
 )
 os.system(split_r2_command)
 reverse_comp_command = (
     f'seq {n_lanes} | time parallel --bar -j4 seqkit seq -r -p -t DNA '
-    f'{sample}/{sample}_QF_L00{{}}_preR2_paired.fastq -o {sample}/{sample}_QF_L00{{}}_R2_paired.fastq'
+    f'results/{sample}/{sample}_QF_L00{{}}_preR2_paired.fastq -o results/{sample}/{sample}_QF_L00{{}}_R2_paired.fastq'
 )
 os.system(reverse_comp_command)
 
@@ -72,13 +72,13 @@ os.system(reverse_comp_command)
 
 for l in range(1, n_lanes + 1):
     merge_r1_command = (
-        f'cat {sample}/{sample}_QF_L00{l}_p.unassembled.forward.fastq '
-        f'{sample}/{sample}_QF_L00{l}_R1_paired.fastq > {sample}/{sample}_QF_merged_L00{l}_R1.fastq'
+        f'cat results/{sample}/{sample}_QF_L00{l}_p.unassembled.forward.fastq '
+        f'results/{sample}/{sample}_QF_L00{l}_R1_paired.fastq > results/{sample}/{sample}_QF_merged_L00{l}_R1.fastq'
     )
     os.system(merge_r1_command)
     merge_r2_command = (
-        f'cat {sample}/{sample}_QF_L00{l}_p.unassembled.reverse.fastq '
-        f'{sample}/{sample}_QF_L00{l}_R2_paired.fastq > {sample}/{sample}_QF_merged_L00{l}_R2.fastq'
+        f'cat results/{sample}/{sample}_QF_L00{l}_p.unassembled.reverse.fastq '
+        f'results/{sample}/{sample}_QF_L00{l}_R2_paired.fastq > results/{sample}/{sample}_QF_merged_L00{l}_R2.fastq'
     )
     os.system(merge_r2_command)
 

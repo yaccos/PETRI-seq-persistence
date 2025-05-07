@@ -18,11 +18,11 @@ barcode_file_prefix <- glue("{script_dir}/sc_barcodes_v2/")
 
 barcode_file_name_main <- c("BC1_5p_anchor_v2.fa", "BC2_anchored.fa", "BC3_anchored.fa")
 
-input_file <- glue("{sample}/{sample}_QF_merged_L001_R1.fastq")
+input_file <- glue("results/{sample}/{sample}_QF_merged_L001_R1.fastq")
 
-paired_input_file <- glue("{sample}/{sample}_QF_merged_L001_R2.fastq")
+paired_input_file <- glue("results/{sample}/{sample}_QF_merged_L001_R2.fastq")
 
-output_table_file <- glue("{sample}_barcode_table.txt")
+output_table_file <- glue("results/{sample}_barcode_table.txt")
 
 sequence_annotation <- c(UMI = "P", "B", "A", "B", "A", "B", "A")
 
@@ -80,7 +80,7 @@ print(filtered_res$summary_res)
 
 freq_table <- create_frequency_table(filtered_res$demultiplex_res$assigned_barcode)
 
-write.table(x = freq_table, file = "{sample}_frequency_table.txt" |> glue(), quote = FALSE, sep = "\t", row.names = FALSE)
+write.table(x = freq_table, file = "results/{sample}_frequency_table.txt" |> glue(), quote = FALSE, sep = "\t", row.names = FALSE)
 
 # bc_cutoff <- posDemux::interactive_bc_cutoff(freq_table) |> print()
 bc_cutoff <- 7000L
@@ -89,8 +89,8 @@ bc_cutoff <- 7000L
 freq_plot <- frequency_plot(freq_table, cutoff = bc_cutoff |> bc_to_frequency_cutoff(frequency_table = freq_table))
 knee_plot <- knee_plot(freq_table, cutoff = bc_cutoff)
 
-ggsave(filename = "{sample}_ReadsPerBC.pdf" |> glue(), plot = freq_plot)
-ggsave(filename = "{sample}_kneePlot.pdf" |> glue(), plot = knee_plot)
+ggsave(filename = "results/{sample}_ReadsPerBC.pdf" |> glue(), plot = freq_plot)
+ggsave(filename = "results/{sample}_kneePlot.pdf" |> glue(), plot = knee_plot)
 
 
 select_reads_from_cutoff <- function(filtered_res, bc_cutoff) {
@@ -114,7 +114,7 @@ reads_to_keep <- selection_res$retained_reads
 selected_frequency_table <- selection_res$frequency_table
 
 write.table(
-    x = selected_frequency_table, file = "{sample}_selected_frequency_table.txt" |> glue(),
+    x = selected_frequency_table, file = "results/{sample}_selected_frequency_table.txt" |> glue(),
     sep = "\t", quote = FALSE, row.names = FALSE,
     col.names = TRUE
 )
@@ -181,7 +181,7 @@ percent_sequences_too_short <- n_sequences_too_short / length(reverse_sequences_
 cat("Trimmed BC1 and its adjecent adapter from {bc1_trim_count} ({trim_percentage |> round(2L)}%) sequences\n\n" |> glue())
 cat("After this trim, {n_sequences_too_short} ({percent_sequences_too_short |> round(2L)}%) \\
  sequences were removed because they became too short\n\n" |> glue())
-writeQualityScaledXStringSet(bc1_trimmed_R2, filepath = "{sample}/{sample}_R2_trimmed.fastq" |> glue(), compress = FALSE)
+writeQualityScaledXStringSet(bc1_trimmed_R2, filepath = "results/{sample}/{sample}_R2_trimmed.fastq" |> glue(), compress = FALSE)
 
 message("Removing hairpins from R2")
 
@@ -215,4 +215,4 @@ hairpin_trim_count <- hairpin_trim |>
     sum()
 trim_percentage <- hairpin_trim_count / length(bc1_trimmed_R2) * 100
 cat("Removed reads with hairpins from {hairpin_trim_count} ({trim_percentage |> round(2L)}%) sequences\n\n" |> glue())
-writeQualityScaledXStringSet(hairpin_trimmed_R2, filepath = "{sample}/{sample}_2trim.fastq" |> glue(), compress = FALSE)
+writeQualityScaledXStringSet(hairpin_trimmed_R2, filepath = "results/{sample}/{sample}_2trim.fastq" |> glue(), compress = FALSE)
