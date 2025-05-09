@@ -18,14 +18,6 @@ n_lanes = int(sys.argv[2])
 
 print(f'Preprocessing {sample}')
 
-
-# Use pear to match read 1 and read 2; for those that overlap, remove reads less than 75bp
-pear_command = (
-    f'seq {n_lanes} | time parallel --bar -j5 pear -f results/{sample}/{sample}_QF_L00{{}}_R1_001.fastq '
-    f'-r results/{sample}/{sample}_QF_L00{{}}_R2_001.fastq -o results/{sample}/{sample}_QF_L00{{}}_p -v 8 -p 0.001 -n 0'
-)
-os.system(pear_command)
-
 cutadapt_command = (
     f'seq {n_lanes} | time parallel --bar -j4 cutadapt -m 75 -o results/{sample}/{sample}_QF_L00{{}}_paired_min75_001.fastq '
     f'results/{sample}/{sample}_QF_L00{{}}_p.assembled.fastq'
