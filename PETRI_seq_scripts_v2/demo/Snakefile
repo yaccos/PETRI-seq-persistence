@@ -58,7 +58,16 @@ rule quality_trim:
         f'-o {output.forward} -p {output.reverse_seq} '\
         f'{input.forward} {input.reverse_seq}'
 
+rule pear_merge:
+    input:
+        forward = f"results/{sample}/{sample}_QF_L00{{lane}}_R1_001.fastq"
+        reverse_seq = f"results/{sample}/{sample}_QF_L00{{lane}}_R2_001.fastq"
+    output:
+        assembled_reads = f"results/{sample}/{sample}_QF_L00{{lane}}_p.assembled.fastq"
+        unassembled_reads = f"results/{sample}/{sample}_QF_L00{{lane}}_p.unassembled.fastq"
 
+    shell:
+        f"pear -f {input.forward} -r {input.reverse_seq} -o results/{sample}/{sample}_QF_L00{{lane}}_p -v 8 -p 0.001 -n 0'
 
 rule sc_pipeline:
     input:

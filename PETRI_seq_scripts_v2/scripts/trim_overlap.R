@@ -34,7 +34,7 @@ reverse_reads <- Biostrings::readQualityScaledDNAStringSet(filepath = reverse_fa
 overlap_alignment <- Biostrings::pairwiseAlignment(
     forward_reads,
     reverse_reads |> reverseComplement(),
-    type = "overlap"
+    type = "local"
 )
 
 n_overlap_bases <- nchar(overlap_alignment)
