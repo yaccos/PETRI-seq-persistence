@@ -12,6 +12,8 @@ bc_1 = bc_2 = bc_3 = range(1, n_bc_idxs + 1)
 sample = "random20000"
 sample_string = f"{sample}_S1"
 
+include: "rules/overlap.smk"
+
 input_fastq = expand(
             "data/{sample}/{sample_string}_L00{lane}_R{r}_001.fastq.gz",
             sample_string=sample_string,
@@ -58,28 +60,13 @@ rule quality_trim:
         f'-o {output.forward} -p {output.reverse_seq} '\
         f'{input.forward} {input.reverse_seq}'
 
-# Use pear to match read 1 and read 2; for those that overlap, remove reads less than 75bp
-rule pear_merge:
-    input:
-        forward = f"results/{sample}/{sample}_QF_L00{{lane}}_R1_001.fastq",
-        reverse_seq = f"results/{sample}/{sample}_QF_L00{{lane}}_R2_001.fastq"
-    output:
-        assembled_reads = f"results/{sample}/{sample}_QF_L00{{lane}}_p.assembled.fastq",
-        unassembled_reads = expand("results/{sample}/{sample}_QF_L00{{lane}}_p.unassembled.{direction}.fastq",
-        sample = sample,
-        direction = ("forward", "reverse")),
-        discarded_reads = f"results/{sample}/{sample}_QF_L00{{lane}}_p.discarded.fastq",
-
-    shell:
-        f"pear -f {input.forward} -r {input.reverse_seq} -o results/{sample}/{sample}_QF_L00{{wildcards.lane}}_p -v 8 -p 0.001 -n 0"
- 
 
 rule sc_pipeline:
     input:
         expand(
-        "results/{sample}/{sample}_QF_L00{lane}_p.{status}.fastq",
+        "results/{sample}/{sample}_QF_merged_{read}_all_lanes.fastq",
         sample = sample,
-        lane = range(1, n_lanes + 1),
+        read = ["R1", "R2"],
         status = ("assembled", "discarded","unassembled.forward","unassembled.reverse")
         ),
         f"{barcode_dir}/BC1_5p_anchor_v2.fa",

@@ -12,15 +12,21 @@ suppressMessages({
 BARCODE_WIDTH <- 7L
 ALLOWED_MISMATCHES <- 1L
 
+args <- commandArgs(trailingOnly = TRUE)
+
+# script_dir  <- args[[1L]]
+
+# sample  <- args[[2L]]
+
 bc_frame <- tibble(bc_name = glue("bc{1:3}"))
 
 barcode_file_prefix <- glue("data/sc_barcodes_v2/")
 
 barcode_file_name_main <- c("BC1_5p_anchor_v2.fa", "BC2_anchored.fa", "BC3_anchored.fa")
 
-input_file <- glue("results/{sample}/{sample}_QF_merged_L001_R1.fastq")
+input_file <- glue("results/{sample}/{sample}_QF_merged_R1_all_lanes.fastq")
 
-paired_input_file <- glue("results/{sample}/{sample}_QF_merged_L001_R2.fastq")
+paired_input_file <- glue("results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq")
 
 output_table_file <- glue("results/{sample}_barcode_table.txt")
 

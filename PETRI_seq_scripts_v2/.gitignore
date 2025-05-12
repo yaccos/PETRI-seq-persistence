@@ -10,7 +10,7 @@ demo/random20000_selected_cells
 *fa.bwt
 *fa.ann
 *fa.amb
-demo/random20000_v11_threshold_0_mixed_species_gene_matrix.txt
+demo/results
 demo/random20000_v11_threshold_0_filtered_mapped_UMIs.txt
 demo/random20000_selected_cumulative_frequency_table.txt
 demo/random20000/random20000_S1_L001_R1_001_fastqc.html
