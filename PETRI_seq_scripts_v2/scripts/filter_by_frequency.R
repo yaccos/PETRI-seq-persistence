@@ -11,6 +11,11 @@ args <- commandArgs(trailingOnly = TRUE)
 
 sample  <- args[[1L]]
 
+# sample  <- "random20000"
+
+# bc_cutoff <- 7000L
+
+bc_cutoff  <- as.integer(args[[2L]])
 
 paired_input_file <- glue("results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq")
 
@@ -18,21 +23,24 @@ input_table_file <- glue("results/{sample}_barcode_table.txt")
 
 input_frequency_table  <- glue("results/{sample}_frequency_table.txt")
 
-input_bc_frame  <- glue("results/{sample}_bc_frame.txt")
+input_bc_frame  <- glue("results/{sample}_bc_frame.rds")
+
+trim_sequence_names <- \(stringset) names(stringset) |>
+    strsplit(" ") |>
+    map_chr(1L)  |> 
+    `names<-`(stringset, value=_)
 
 
 message("Reading input sequences")
-reverse_sequences <- Biostrings::readQualityScaledDNAStringSet(filepath = paired_input_file, quality.scoring = "phred")
+reverse_sequences <- Biostrings::readQualityScaledDNAStringSet(filepath = paired_input_file, quality.scoring = "phred")  |> 
+trim_sequence_names()
 
-freq_table <- read.table(file = input_frequency_table, header = TRUE, sep = "\t")
-barcode_table  <- read.table(file = input_table_file, header = TRUE, sep = "\t")
-bc_frame  <- read.table(input_bc_frame, header = TRUE, sep = "\t")
-names(bc_frame$stringset) <- bc_frame$bc_name
+freq_table <- read.table(file = input_frequency_table, header = TRUE, row.names = NULL, sep = "\t")
+barcode_table  <- read.table(file = input_table_file, header = TRUE, row.names = NULL, sep = "\t")
+bc_frame  <- readRDS(input_bc_frame)
 
 # Main context
 # bc_cutoff <- posDemux::interactive_bc_cutoff(freq_table) |> print()
-# bc_cutoff <- 7000L
-bc_cutoff  <- as.integer(args[[2L]])
 
 select_reads_from_cutoff <- function(filtered_res, bc_cutoff) {
     selected_freq_table <- dplyr::filter(freq_table, cumulative_frequency <= bc_cutoff)
@@ -55,7 +63,7 @@ write.table(
 )
 
 reverse_sequences_to_keep <- reverse_sequences[reads_to_keep]
-selected_assigned_barcodes <- demultiplex_res$assigned_barcodes[reads_to_keep, ]
+selected_assigned_barcodes <- barcode_table  |> filter(read %in% reads_to_keep)
 
 bc1_stringset <- bc_frame$stringset[[1]]
 bc1_selected_assigned_barcodes <- selected_assigned_barcodes[, "bc1", drop = TRUE]
@@ -115,7 +123,6 @@ percent_sequences_too_short <- n_sequences_too_short / length(reverse_sequences_
 cat("Trimmed BC1 and its adjecent adapter from {bc1_trim_count} ({trim_percentage |> round(2L)}%) sequences\n\n" |> glue())
 cat("After this trim, {n_sequences_too_short} ({percent_sequences_too_short |> round(2L)}%) \\
  sequences were removed because they became too short\n\n" |> glue())
-writeQualityScaledXStringSet(bc1_trimmed_R2, filepath = "results/{sample}/{sample}_R2_trimmed.fastq" |> glue(), compress = FALSE)
 
 message("Removing hairpins from R2")
 
@@ -142,6 +149,7 @@ trim_hairpins_from_stringset <- function(bc2_string, bc2_name) {
 
 bc2_stringset <- bc_frame$stringset[[2]]
 bc2_selected_assigned_barcodes <- selected_assigned_barcodes[, "bc2", drop = TRUE]
+names(bc2_selected_assigned_barcodes)  <- selected_assigned_barcodes$read
 hairpin_trim <- imap(bc2_stringset, trim_hairpins_from_stringset)
 hairpin_trimmed_R2 <- rlang::exec(c, !!!unname(hairpin_trim) |> map("sequences"))
 hairpin_trim_count <- hairpin_trim |>

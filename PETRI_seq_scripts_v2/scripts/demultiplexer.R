@@ -25,13 +25,18 @@ output_table_file <- glue("results/{sample}_barcode_table.txt")
 
 output_frequency_table  <- glue("results/{sample}_frequency_table.txt")
 
-output_bc_frame  <- glue("results/{sample}_bc_frame.txt")
+output_bc_frame  <- glue("results/{sample}_bc_frame.rds")
 
 sequence_annotation <- c(UMI = "P", "B", "A", "B", "A", "B", "A")
 
 segment_lengths <- c(7L, 7L, 15L, 7L, 14L, 7L, NA_integer_)
 
 min_sequence_length <- sum(head(segment_lengths, -1L))
+
+trim_sequence_names <- \(stringset) names(stringset) |>
+    strsplit(" ") |>
+    map_chr(1L)  |> 
+    `names<-`(stringset, value=_)
 
 
 bc_frame$filename <- paste0(barcode_file_prefix, barcode_file_name_main)
@@ -47,7 +52,9 @@ bc_frame$stringset <- map(bc_frame$filename, function(filepath) {
 names(bc_frame$stringset) <- bc_frame$bc_name
 
 message("Reading input sequences")
-forward_sequences <- Biostrings::readQualityScaledDNAStringSet(filepath = input_file, quality.scoring = "phred")
+forward_sequences <- Biostrings::readQualityScaledDNAStringSet(filepath = input_file, quality.scoring = "phred")  |> 
+trim_sequence_names()
+
 sequence_long_enough <- width(forward_sequences) >= min_sequence_length
 forward_sequences <- forward_sequences[sequence_long_enough]
 
@@ -78,4 +85,4 @@ freq_table <- create_frequency_table(filtered_res$demultiplex_res$assigned_barco
 
 write.table(x = freq_table, file = output_frequency_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
 
-write.table(x = bc_frame, file = output_bc_frame, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+saveRDS(object = bc_frame, file = output_bc_frame, compress = FALSE)

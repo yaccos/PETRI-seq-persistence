@@ -75,8 +75,6 @@ indexed_reference_genome = reference_genome + ".bwt"
 
 reference_annotation = f"data/U00096_JE2_rRNA.gff"
 
-sc_out = rules.sc_pipeline.output
-
 
 rule bwa_index:
     input:
@@ -89,8 +87,8 @@ rule bwa_index:
 
 rule pipeline_generic:
     input:
-        sc_out.trimmed_sequences,
-        sc_out.barcode_table,
+        f"results/{sample}/{sample}_2trim.fastq",
+        f"results/{sample}_barcode_table.txt",
         reference_genome,
         indexed_reference_genome,
         reference_annotation,
