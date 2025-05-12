@@ -14,9 +14,7 @@ ALLOWED_MISMATCHES <- 1L
 
 args <- commandArgs(trailingOnly = TRUE)
 
-# script_dir  <- args[[1L]]
-
-# sample  <- args[[2L]]
+sample  <- args[[1L]]
 
 bc_frame <- tibble(bc_name = glue("bc{1:3}"))
 
