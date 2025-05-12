@@ -11,11 +11,5 @@ demo/random20000_selected_cells
 *fa.ann
 *fa.amb
 demo/results
-demo/random20000_v11_threshold_0_filtered_mapped_UMIs.txt
-demo/random20000_selected_cumulative_frequency_table.txt
-demo/random20000/random20000_S1_L001_R1_001_fastqc.html
-demo/random20000/random20000_S1_L001_R1_001_fastqc.zip
-demo/random20000/random20000_S1_L001_R2_001_fastqc.html
-demo/random20000/random20000_S1_L001_R2_001_fastqc.zip
 *.pyc
 demo/.snakemake
