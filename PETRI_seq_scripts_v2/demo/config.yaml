@@ -1,0 +1,12 @@
+samples:
+  - random20000:
+      prefix: data/random20000_S1_
+      suffix: _001.fastq.gz
+      forward_reads:
+        - L001: L001_R1
+      reverse_reads:
+        - L001: L001_R2
+
+reference_genome: data/U00096_JE2.fa
+
+reference_annotation: data/U00096_JE2_rRNA.gff

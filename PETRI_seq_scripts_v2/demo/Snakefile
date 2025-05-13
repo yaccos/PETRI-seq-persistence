@@ -1,22 +1,17 @@
 # script_dir = f"{os.path.dirname(os.path.abspath(__file__))}/../scripts"
 import os
 
-
-def change_ext(filename, new_ext):
-    base, _ = os.path.splitext(filename)
-    return base + new_ext
-
-
 script_dir = f"../scripts"
 barcode_dir = f"data/sc_barcodes_v2"
+
 n_lanes = 1
 n_bc_idxs = 96
 bc_1 = bc_2 = bc_3 = range(1, n_bc_idxs + 1)
+
 sample = "random20000"
 sample_string = f"{sample}_S1"
 
 reference_genome = f"data/U00096_JE2.fa"
-indexed_reference_genome = reference_genome + ".bwt"
 
 reference_annotation = f"data/U00096_JE2_rRNA.gff"
 
