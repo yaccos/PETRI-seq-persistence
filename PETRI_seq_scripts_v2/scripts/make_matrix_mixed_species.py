@@ -13,5 +13,5 @@ gene_matrix = (table[['contig:gene','UMI']].
                droplevel(0).
                filter(regex="^(?!.*ambiguous).*$") # We filter away the columns *not* containing 'ambiguous' by using a negative lookahead
                )
-gene_matrix.to_csv(f"results/{sample}_mixed_species_gene_matrix.txt",sep='\t')
+gene_matrix.to_csv(f"results/{sample}_gene_count_matrix.txt",sep='\t')
 

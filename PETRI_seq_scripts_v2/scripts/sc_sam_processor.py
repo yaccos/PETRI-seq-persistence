@@ -1,11 +1,9 @@
 #sam processor for directional UMI grouping
-import sys
 import re
+import sys
 
-version = 11
 threshold = int(sys.argv[1])
 sample = sys.argv[2]
-
 
 def get_tag(line, tag):
     match = re.search(f"(?<={tag}:\\S:)\\S+", line)
@@ -31,7 +29,7 @@ def get_contig(line):
     edit_dist = get_tag(line, "NM")
     match_list = get_tag(line, "XA").split(';')
     for entry in match_list:
-        if entry != '' and entry.split(',')[3] == edit_dist and entry.split(',')[0] not in proposed_contig:
+        if entry not in ('', 'NA') and entry.split(',')[3] == edit_dist and entry.split(',')[0] not in proposed_contig:
                     return 'ambiguous'
     return proposed_contig
 
@@ -66,7 +64,7 @@ def get_alignment_status(line):
 
 UMIgene_to_count = {}
 
-sam = open(f'results/{sample}_FC_directional_grouped_2/{sample}_group_FC.sam', 'r')
+sam = open(f'results/{sample}/{sample}_group_FC.sam', 'r')
 
 for line in sam:
         cell_barcode = get_tag(line, "CB")
@@ -88,7 +86,7 @@ for line in sam:
 
 sam.close()
 
-output = open(f'results/{sample}_v{version}_threshold_{threshold}_filtered_mapped_UMIs.txt', 'w')
+output = open(f'results/{sample}_filtered_mapped_UMIs.txt', 'w')
 output.write('Cell Barcode\tUMI\tcontig:gene\ttotal_reads\n')
 
 for cell_barcode, count_dict in UMIgene_to_count.items():

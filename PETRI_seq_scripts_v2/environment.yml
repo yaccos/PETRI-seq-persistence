@@ -5,7 +5,6 @@ channels:
 dependencies:
   - fastqc
   - cutadapt
-  - parallel
   - umi_tools
   - subread
   - bwa
@@ -18,16 +17,12 @@ dependencies:
   - seqkit
   - snakemake
   - snakefmt
-  - bioconductor-dnabarcodes
   - radian
   - r-languageserver
-  - rpy2
   - bioconductor-biostrings
   - bioconductor-genomicalignments
   - bioconductor-rtracklayer
   - r-dplyr
   - r-ggplot2
-  - r-shiny
-  - r-devtools
   - bioconductor-rsamtools
 prefix: /home/japet/miniforge3/envs/petriseq

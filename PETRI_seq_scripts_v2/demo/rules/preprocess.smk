@@ -4,7 +4,7 @@ rule fastqc:
     output:
         expand(
             "results/{{sample}}/{{fastq_name}}_fastqc.{format}",
-            format=["html", "zip"],
+            format= ["html", "zip"]
         ),
     shell:
         "fastqc {input} -o results/{sample}"
