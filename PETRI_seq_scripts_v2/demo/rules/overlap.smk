@@ -3,66 +3,65 @@
 
 rule pear_merge:
     input:
-        forward=f"results/{sample}/{sample}_QF_L00{{lane}}_R1_001.fastq",
-        reverse_seq=f"results/{sample}/{sample}_QF_L00{{lane}}_R2_001.fastq",
+        forward="results/{sample}/{sample}_QF_L00{lane}_R1_001.fastq",
+        reverse_seq="results/{sample}/{sample}_QF_L00{lane}_R2_001.fastq",
     output:
-        assembled_reads=f"results/{sample}/{sample}_QF_L00{{lane}}_p.assembled.fastq",
-        unassembled_reads=expand(
-            "results/{sample}/{sample}_QF_L00{{lane}}_p.unassembled.{direction}.fastq",
-            sample=sample,
-            direction=("forward", "reverse"),
+        assembled_reads="results/{sample}/{sample}_QF_L00{lane}_p.assembled.fastq",
+        unassembled_reads = expand(
+            "results/{{sample}}/{{sample}}_QF_L00{{lane}}_p.unassembled.{direction}.fastq",
+            direction = ("forward", "reverse"),
         ),
-        discarded_reads=f"results/{sample}/{sample}_QF_L00{{lane}}_p.discarded.fastq",
+        discarded_reads="results/{sample}/{sample}_QF_L00{lane}_p.discarded.fastq",
     shell:
-        f"pear -f {input.forward} -r {input.reverse_seq} -o results/{sample}/{sample}_QF_L00{{wildcards.lane}}_p -v 8 -p 0.001 -n 0"
+        "pear -f {input.forward} -r {input.reverse_seq} -o results/{wildcards.sample}/{wildcards.sample}_QF_L00{wildcards.lane}_p -v 8 -p 0.001 -n 0"
 
 
 rule remove_short_reads:
     input:
-        f"results/{sample}/{sample}_QF_L00{{lane}}_p.assembled.fastq",
+        "results/{sample}/{sample}_QF_L00{lane}_p.assembled.fastq",
     output:
-        f"results/{sample}/{sample}_QF_L00{{lane}}_paired_min75_001.fastq",
+        "results/{sample}/{sample}_QF_L00{lane}_paired_min75_001.fastq",
     shell:
         "cutadapt -m 75 -o {output} {input}"
 
 
 rule split_R1:
     input:
-        f"results/{sample}/{sample}_QF_L00{{lane}}_paired_min75_001.fastq",
+        "results/{sample}/{sample}_QF_L00{lane}_paired_min75_001.fastq",
     output:
-        f"results/{sample}/{sample}_QF_L00{{lane}}_R1_paired.fastq",
+        "results/{sample}/{sample}_QF_L00{lane}_R1_paired.fastq",
     shell:
         "cutadapt -l 58 -o {output} {input}"
 
 
 rule split_R2:
     input:
-        f"results/{sample}/{sample}_QF_L00{{lane}}_paired_min75_001.fastq",
+        "results/{sample}/{sample}_QF_L00{lane}_paired_min75_001.fastq",
     output:
-        f"results/{sample}/{sample}_QF_L00{{lane}}_preR2_paired.fastq",
+        "results/{sample}/{sample}_QF_L00{lane}_preR2_paired.fastq",
     shell:
         "cutadapt -u 58 -o {output} {input}"
 
 
 rule reverse_compliment_R2:
     input:
-        f"results/{sample}/{sample}_QF_L00{{lane}}_preR2_paired.fastq",
+        "results/{sample}/{sample}_QF_L00{lane}_preR2_paired.fastq",
     output:
-        f"results/{sample}/{sample}_QF_L00{{lane}}_R2_paired.fastq",
+        "results/{sample}/{sample}_QF_L00{lane}_R2_paired.fastq",
     shell:
         "seqkit seq -r -p -t DNA {input} -o {output}"
 
 
 def unassembled_read(wildcards):
-    return f"results/{sample}/{sample}_QF_L00{wildcards.lane}_p.unassembled.{"forward" if wildcards.read== "R1" else "reverse"}.fastq"
+    return f"results/{wildcards.sample}/{wildcards.sample}_QF_L00{wildcards.lane}_p.unassembled.{"forward" if wildcards.read== "R1" else "reverse"}.fastq"
 
 
 rule merge_reads:
     input:
-        assembled=f"results/{sample}/{sample}_QF_L00{{lane}}_{{read}}_paired.fastq",
-        unassembled=lambda wildcards: unassembled_read,
+        assembled="results/{sample}/{sample}_QF_L00{lane}_{read}_paired.fastq",
+        unassembled = unassembled_read,
     output:
-        f"results/{sample}/{sample}_QF_merged_L00{{lane}}_{{read}}.fastq",
+        "results/{sample}/{sample}_QF_merged_L00{lane}_{read}.fastq",
     shell:
         "cat {input.assembled} {input.unassembled} > {output}"
 
