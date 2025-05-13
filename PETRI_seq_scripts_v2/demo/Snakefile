@@ -16,8 +16,10 @@ sample = "random20000"
 sample_string = f"{sample}_S1"
 
 
+include: "rules/preprocess.smk"
 include: "rules/overlap.smk"
 include: "rules/sc_pipeline.smk"
+include: "rules/align.smk"
 
 
 input_fastq = expand(
@@ -45,44 +47,10 @@ fastqc_output = expand(
 )
 
 
-rule fastqc:
-    input:
-        f"data/{sample}/{{fastq_name}}.fastq.gz",
-    output:
-        expand(
-            "results/{sample}/{{fastq_name}}_fastqc.{format}",
-            sample=sample,
-            format=["html", "zip"],
-        ),
-    shell:
-        f"fastqc {input} -o results/{sample}"
-
-
-rule quality_trim:
-    # reverse is reserved for internal use by Snakemake, so we have to rewrite it
-    input:
-        forward=f"data/{sample}/{sample_string}_L00{{lane}}_R1_001.fastq.gz",
-        reverse_seq=f"data/{sample}/{sample_string}_L00{{lane}}_R2_001.fastq.gz",
-    output:
-        forward="results/{sample}/{sample}_QF_L00{lane}_R1_001.fastq",
-        reverse_seq="results/{sample}/{sample}_QF_L00{lane}_R2_001.fastq",
-    shell:
-        f"cutadapt -q 10,10 --minimum-length 55:14 --max-n 3 --pair-filter=any " f"-o {output.forward} -p {output.reverse_seq} " f"{input.forward} {input.reverse_seq}"
-
-
 reference_genome = f"data/U00096_JE2.fa"
 indexed_reference_genome = reference_genome + ".bwt"
 
 reference_annotation = f"data/U00096_JE2_rRNA.gff"
-
-
-rule bwa_index:
-    input:
-        "{genome}.fa",
-    output:
-        "{genome}.fa.bwt",
-    shell:
-        "bwa index {wildcards.genome}.fa"
 
 
 rule pipeline_generic:

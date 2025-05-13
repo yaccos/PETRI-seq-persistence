@@ -7,9 +7,9 @@ rule pear_merge:
         reverse_seq="results/{sample}/{sample}_QF_L00{lane}_R2_001.fastq",
     output:
         assembled_reads="results/{sample}/{sample}_QF_L00{lane}_p.assembled.fastq",
-        unassembled_reads = expand(
+        unassembled_reads=expand(
             "results/{{sample}}/{{sample}}_QF_L00{{lane}}_p.unassembled.{direction}.fastq",
-            direction = ("forward", "reverse"),
+            direction=("forward", "reverse"),
         ),
         discarded_reads="results/{sample}/{sample}_QF_L00{lane}_p.discarded.fastq",
     shell:
@@ -59,7 +59,7 @@ def unassembled_read(wildcards):
 rule merge_reads:
     input:
         assembled="results/{sample}/{sample}_QF_L00{lane}_{read}_paired.fastq",
-        unassembled = unassembled_read,
+        unassembled=unassembled_read,
     output:
         "results/{sample}/{sample}_QF_merged_L00{lane}_{read}.fastq",
     shell:
