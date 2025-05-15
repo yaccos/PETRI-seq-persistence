@@ -4,12 +4,12 @@ rule pear_merge:
         forward="results/{sample}/{sample}_QF_{lane}_R1.fastq",
         reverse_seq="results/{sample}/{sample}_QF_{lane}_R2.fastq",
     output:
-        assembled_reads="results/{sample}/{sample}_QF_{lane}_p.assembled.fastq",
-        unassembled_reads=expand(
+        assembled_reads=temp("results/{sample}/{sample}_QF_{lane}_p.assembled.fastq"),
+        unassembled_reads=temp(expand(
             "results/{{sample}}/{{sample}}_QF_{{lane}}_p.unassembled.{direction}.fastq",
             direction=("forward", "reverse"),
-        ),
-        discarded_reads="results/{sample}/{sample}_QF_{lane}_p.discarded.fastq",
+        )),
+        discarded_reads=temp("results/{sample}/{sample}_QF_{lane}_p.discarded.fastq"),
     shell:
         "pear -f {input.forward} -r {input.reverse_seq} -o results/{wildcards.sample}/{wildcards.sample}_QF_{wildcards.lane}_p -v 8 -p 0.001 -n 0"
 
@@ -18,7 +18,7 @@ rule remove_short_reads:
     input:
         "results/{sample}/{sample}_QF_{lane}_p.assembled.fastq",
     output:
-        "results/{sample}/{sample}_QF_{lane}_paired_min75.fastq",
+        temp("results/{sample}/{sample}_QF_{lane}_paired_min75.fastq"),
     shell:
         "cutadapt -m 75 -o {output} {input}"
 
@@ -27,7 +27,7 @@ rule split_R1:
     input:
         "results/{sample}/{sample}_QF_{lane}_paired_min75.fastq",
     output:
-        "results/{sample}/{sample}_QF_{lane}_R1_paired.fastq",
+        temp("results/{sample}/{sample}_QF_{lane}_R1_paired.fastq"),
     shell:
         "cutadapt -l 58 -o {output} {input}"
 
@@ -36,7 +36,7 @@ rule split_R2:
     input:
         "results/{sample}/{sample}_QF_{lane}_paired_min75.fastq",
     output:
-        "results/{sample}/{sample}_QF_{lane}_preR2_paired.fastq",
+        temp("results/{sample}/{sample}_QF_{lane}_preR2_paired.fastq"),
     shell:
         "cutadapt -u 58 -o {output} {input}"
 
@@ -45,7 +45,7 @@ rule reverse_compliment_R2:
     input:
         "results/{sample}/{sample}_QF_{lane}_preR2_paired.fastq",
     output:
-        "results/{sample}/{sample}_QF_{lane}_R2_paired.fastq",
+        temp("results/{sample}/{sample}_QF_{lane}_R2_paired.fastq"),
     shell:
         "seqkit seq -r -p -t DNA {input} -o {output}"
 
@@ -59,7 +59,7 @@ rule merge_reads:
         assembled="results/{sample}/{sample}_QF_{lane}_{read}_paired.fastq",
         unassembled=unassembled_read,
     output:
-        "results/{sample}/{sample}_QF_merged_{lane}_{read}.fastq",
+        temp("results/{sample}/{sample}_QF_merged_{lane}_{read}.fastq"),
     shell:
         "cat {input.assembled} {input.unassembled} > {output}"
 

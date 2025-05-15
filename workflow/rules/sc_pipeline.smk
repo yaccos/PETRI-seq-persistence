@@ -31,7 +31,7 @@ rule filter_and_trim:
         "results/{sample}/{sample}_bc_frame.rds",
         "results/{sample}/{sample}_frequency_table.txt",
     output:
-        trimmed_sequences="results/{sample}/{sample}_2trim.fastq",
+        trimmed_sequences=temp("results/{sample}/{sample}_2trim.fastq"),
         frequency_table="results/{sample}/{sample}_selected_frequency_table.txt",
     params:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"]

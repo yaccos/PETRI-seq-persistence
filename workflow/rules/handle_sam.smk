@@ -3,7 +3,7 @@ rule remove_xt_tags:
     input:
         "results/{sample}/{sample}_bwa.sam",
     output:
-        "results/{sample}/{sample}_no_XT.sam",
+        temp("results/{sample}/{sample}_no_XT.sam"),
     shell:
         'sed "s/XT:/XN:/" {input} > {output}'
 
@@ -13,7 +13,7 @@ rule sam_to_bam_sort:
     input:
         "results/{sample}/{sample}_no_XT.sam",
     output:
-        "results/{sample}/{sample}_sorted.bam",
+        temp("results/{sample}/{sample}_sorted.bam"),
     shell:
         "samtools view -bS {input} | samtools sort - > {output}"
 
@@ -23,7 +23,7 @@ rule index_bam:
     input:
         "results/{sample}/{sample}_sorted.bam",
     output:
-        "results/{sample}/{sample}_sorted.bam.bai",
+        temp("results/{sample}/{sample}_sorted.bam.bai"),
     shell:
         "samtools index {input}"
 
@@ -35,8 +35,10 @@ rule feature_counts:
         bai="results/{sample}/{sample}_sorted.bam.bai",
         gff=lambda wildcards: processed_config[wildcards.sample]["annotation"],
     output:
-        counts="results/{sample}/{sample}.featureCounts.txt",
-        bam="results/{sample}/{sample}_sorted.bam.featureCounts.bam",
+        counts=temp("results/{sample}/{sample}.featureCounts.txt"),
+        # This is really a log file
+        counts_summary="results/{sample}/{sample}.featureCounts.txt.summary",
+        bam=temp("results/{sample}/{sample}_sorted.bam.featureCounts.bam"),
     shell:
         """
         featureCounts -t 'Coding_or_RNA' -g 'name' -s 1 -a {input.gff} -o {output.counts} -R BAM {input.bam}
@@ -48,7 +50,7 @@ rule index_fc_bam:
     input:
         "results/{sample}/{sample}_sorted.bam.featureCounts.bam",
     output:
-        "results/{sample}/{sample}_sorted.bam.featureCounts.bam.bai",
+        temp("results/{sample}/{sample}_sorted.bam.featureCounts.bam.bai"),
     shell:
         "samtools index {input}"
 
@@ -60,7 +62,8 @@ rule add_cell_barcode:
         bai="results/{sample}/{sample}_sorted.bam.featureCounts.bam.bai",
         barcode_table="results/{sample}/{sample}_barcode_table.txt",
     output:
-        bam="results/{sample}/{sample}_sorted.bam.featureCounts_with_celltag.bam",
+        temp("results/{sample}/{sample}_sorted.bam.featureCounts_with_celltag.bam"),
+        temp("results/{sample}/{sample}_sorted.bam.featureCounts_with_celltag.bam.bai")
     shell:
         "Rscript {script_dir}/add_cell_barcode.R {wildcards.sample}"
 
@@ -69,9 +72,10 @@ rule add_cell_barcode:
 rule umi_tools_group:
     input:
         bam="results/{sample}/{sample}_sorted.bam.featureCounts_with_celltag.bam",
+        bai="results/{sample}/{sample}_sorted.bam.featureCounts_with_celltag.bam.bai"
     output:
-        tsv="results/{sample}/{sample}_UMI_counts.tsv",
-        bam="results/{sample}/{sample}_group_FC.bam",
+        tsv=temp("results/{sample}/{sample}_UMI_counts.tsv"),
+        bam=temp("results/{sample}/{sample}_group_FC.bam"),
     shell:
         """
         umi_tools group --per-gene --gene-tag=XT --per-cell --cell-tag=CB --extract-umi-method=tag --umi-tag=BX \
@@ -86,7 +90,7 @@ rule bam_to_sam:
     input:
         "results/{sample}/{sample}_group_FC.bam",
     output:
-        "results/{sample}/{sample}_group_FC.sam",
+        temp("results/{sample}/{sample}_group_FC.sam"),
     shell:
         "samtools view {input} > {output}"
 
@@ -96,7 +100,7 @@ rule process_sam:
     input:
         "results/{sample}/{sample}_group_FC.sam",
     output:
-        "results/{sample}/{sample}_filtered_mapped_UMIs.txt",
+        temp("results/{sample}/{sample}_filtered_mapped_UMIs.txt"),
     shell:
         "python {script_dir}/sc_sam_processor.py 0 {wildcards.sample}"
 
