@@ -21,11 +21,11 @@ barcode_file_name_main <- c("BC1_5p_anchor_v2.fa", "BC2_anchored.fa", "BC3_ancho
 
 input_file <- glue("results/{sample}/{sample}_QF_merged_R1_all_lanes.fastq")
 
-output_table_file <- glue("results/{sample}_barcode_table.txt")
+output_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
-output_frequency_table  <- glue("results/{sample}_frequency_table.txt")
+output_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
 
-output_bc_frame  <- glue("results/{sample}_bc_frame.rds")
+output_bc_frame  <- glue("results/{sample}/{sample}_bc_frame.rds")
 
 sequence_annotation <- c(UMI = "P", "B", "A", "B", "A", "B", "A")
 

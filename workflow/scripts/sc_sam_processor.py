@@ -86,7 +86,7 @@ for line in sam:
 
 sam.close()
 
-output = open(f'results/{sample}_filtered_mapped_UMIs.txt', 'w')
+output = open(f'results/{sample}/{sample}_filtered_mapped_UMIs.txt', 'w')
 output.write('Cell Barcode\tUMI\tcontig:gene\ttotal_reads\n')
 
 for cell_barcode, count_dict in UMIgene_to_count.items():

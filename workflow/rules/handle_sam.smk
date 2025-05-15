@@ -46,9 +46,9 @@ rule feature_counts:
 # Index featureCounts BAM
 rule index_fc_bam:
     input:
-        "results/{sample}_sorted.bam.featureCounts.bam",
+        "results/{sample}/{sample}_sorted.bam.featureCounts.bam",
     output:
-        "results/{sample}_sorted.bam.featureCounts.bam.bai",
+        "results/{sample}/{sample}_sorted.bam.featureCounts.bam.bai",
     shell:
         "samtools index {input}"
 
@@ -58,7 +58,7 @@ rule add_cell_barcode:
     input:
         bam="results/{sample}/{sample}_sorted.bam.featureCounts.bam",
         bai="results/{sample}/{sample}_sorted.bam.featureCounts.bam.bai",
-        barcode_table="results/{sample}_barcode_table.txt",
+        barcode_table="results/{sample}/{sample}_barcode_table.txt",
     output:
         bam="results/{sample}/{sample}_sorted.bam.featureCounts_with_celltag.bam",
     shell:
@@ -96,7 +96,7 @@ rule process_sam:
     input:
         "results/{sample}/{sample}_group_FC.sam",
     output:
-        "results/{sample}_filtered_mapped_UMIs.txt",
+        "results/{sample}/{sample}_filtered_mapped_UMIs.txt",
     shell:
         "python {script_dir}/sc_sam_processor.py 0 {wildcards.sample}"
 
@@ -104,8 +104,8 @@ rule process_sam:
 # Make matrix
 rule make_matrix:
     input:
-        "results/{sample}_filtered_mapped_UMIs.txt",
+        "results/{sample}/{sample}_filtered_mapped_UMIs.txt",
     output:
-        "results/{sample}_gene_count_matrix.txt",
+        "results/{sample}/{sample}_gene_count_matrix.txt",
     shell:
         "python {script_dir}/make_matrix_mixed_species.py {wildcards.sample}"

@@ -10,7 +10,7 @@ args <- commandArgs(trailingOnly = TRUE)
 sample <- args[1]
 
 bam_file <- glue("results/{sample}/{sample}_sorted.bam.featureCounts.bam")
-barcode_index_file <- glue("results/{sample}_barcode_table.txt")
+barcode_index_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
 annotated_alignment <- import(bam_file, format = "BAM", use.names = TRUE, param = ScanBamParam(tag = c("X0", "XA", "NM", "MD", "XT")))
 barcode_index <- read.table(barcode_index_file, header = TRUE)

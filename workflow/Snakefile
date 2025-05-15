@@ -39,10 +39,11 @@ def expand_fastqc(sample):
     )
 
 fastqc_output = [fastq for sample in sample_names for fastq in expand_fastqc(sample)]
+gene_matrix_output = expand("results/{sample}/{sample}_gene_count_matrix.txt", sample=sample_names)
 
 
-knee_plot = expand("results/{sample}_kneePlot.pdf", sample = sample_names)
-histogram = expand("results/{sample}_ReadsPerBC.pdf", sample = sample_names)
+knee_plot = expand("results/{sample}/{sample}_kneePlot.pdf", sample = sample_names)
+histogram = expand("results/{sample}/{sample}_ReadsPerBC.pdf", sample = sample_names)
 
 
 rule all:
@@ -50,4 +51,4 @@ rule all:
         fastqc_output,
         knee_plot,
         histogram,
-        fastqc_output,
+        gene_matrix_output,

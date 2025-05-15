@@ -19,11 +19,11 @@ bc_cutoff  <- as.integer(args[[2L]])
 
 paired_input_file <- glue("results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq")
 
-input_table_file <- glue("results/{sample}_barcode_table.txt")
+input_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
-input_frequency_table  <- glue("results/{sample}_frequency_table.txt")
+input_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
 
-input_bc_frame  <- glue("results/{sample}_bc_frame.rds")
+input_bc_frame  <- glue("results/{sample}/{sample}_bc_frame.rds")
 
 trim_sequence_names <- \(stringset) names(stringset) |>
     strsplit(" ") |>
@@ -57,7 +57,7 @@ reads_to_keep <- selection_res$retained_reads
 selected_frequency_table <- selection_res$frequency_table
 
 write.table(
-    x = selected_frequency_table, file = "results/{sample}_selected_frequency_table.txt" |> glue(),
+    x = selected_frequency_table, file = "results/{sample}/{sample}_selected_frequency_table.txt" |> glue(),
     sep = "\t", quote = FALSE, row.names = FALSE,
     col.names = TRUE
 )
