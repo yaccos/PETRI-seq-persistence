@@ -1,0 +1,15 @@
+prefix: data/
+
+samples:
+  random20000:
+    bc_cutoff: 7000
+    prefix: random20000/random20000_S1_
+    lanes:
+      - L001
+    forward_suffix: _R1
+    reverse_suffix: _R2
+    suffix: _001.fastq.gz
+
+reference_genome: U00096_JE2.fa
+
+reference_annotation: U00096_JE2_rRNA.gff

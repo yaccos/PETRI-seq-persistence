@@ -4,4 +4,13 @@
 .Ruserdata
 *.Rproj
 .vscode/
-
+workflow/scripts/__pycache__
+*.swp
+*fa.sa
+*fa.pac
+*fa.bwt
+*fa.ann
+*fa.amb
+*.pyc
+workflow/.snakemake
+workflow/results

@@ -1,0 +1,53 @@
+# script_dir = f"{os.path.dirname(os.path.abspath(__file__))}/../scripts"
+import os
+script_dir = "scripts"
+import scripts.handle_config as handle_config
+
+
+configfile: "config.yaml"
+
+report: "report/workflow.rst"
+
+processed_config = handle_config.config_transform(config)
+
+barcode_dir = f"data/sc_barcodes_v2"
+
+sample_names = list(processed_config.keys())
+
+# Add this at the top of the file, before any rules
+wildcard_constraints:
+    lane="[^_]*",  # Lane identifiers are not allowed to have underscores
+    read="R[12]"
+
+
+include: "rules/preprocess.smk"
+include: "rules/overlap.smk"
+include: "rules/sc_pipeline.smk"
+include: "rules/align.smk"
+include: "rules/handle_sam.smk"
+
+def expand_fastqc(sample):
+    sample_config = processed_config[sample]
+    template = "results/{sample}/{sample}_{lane}_R{r}_fastqc.{format}"
+    lanes = processed_config[sample]["fastq"].keys()
+    return expand(
+    template,
+    sample=sample,
+    lane=lanes,
+    r=[1, 2],
+    format=["html", "zip"],
+    )
+
+fastqc_output = [fastq for sample in sample_names for fastq in expand_fastqc(sample)]
+
+
+knee_plot = expand("results/{sample}_kneePlot.pdf", sample = sample_names)
+histogram = expand("results/{sample}_ReadsPerBC.pdf", sample = sample_names)
+
+
+rule all:
+    input:
+        fastqc_output,
+        knee_plot,
+        histogram,
+        fastqc_output,
