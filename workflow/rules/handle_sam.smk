@@ -36,12 +36,16 @@ rule feature_counts:
         gff=lambda wildcards: processed_config[wildcards.sample]["annotation"],
     output:
         counts=temp("results/{sample}/{sample}.featureCounts.txt"),
-        # This is really a log file
-        counts_summary="results/{sample}/{sample}.featureCounts.txt.summary",
+        
         bam=temp("results/{sample}/{sample}_sorted.bam.featureCounts.bam"),
+    log:
+        report="logs/{sample}/{sample}_featureCounts.log",
+        # This is really a log file
+        counts_summary="logs/{sample}/{sample}.featureCounts.txt.summary",
     shell:
         """
-        featureCounts -t 'Coding_or_RNA' -g 'name' -s 1 -a {input.gff} -o {output.counts} -R BAM {input.bam}
+        featureCounts -t 'Coding_or_RNA' -g 'name' -s 1 -a {input.gff} -o {output.counts} -R BAM {input.bam} 2> {log.report}
+        mv {output.counts}.summary {log.counts_summary}
         """
 
 
@@ -76,12 +80,14 @@ rule umi_tools_group:
     output:
         tsv=temp("results/{sample}/{sample}_UMI_counts.tsv"),
         bam=temp("results/{sample}/{sample}_group_FC.bam"),
+    log:
+        "logs/{sample}/umi_tools_group.log"
     shell:
         """
         umi_tools group --per-gene --gene-tag=XT --per-cell --cell-tag=CB --extract-umi-method=tag --umi-tag=BX \
         -I {input.bam} \
         --group-out={output.tsv} \
-        --method=directional --output-bam -S {output.bam}
+        --method=directional --output-bam -S {output.bam} > {log}
         """
 
 

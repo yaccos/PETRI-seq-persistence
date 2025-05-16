@@ -8,8 +8,10 @@ rule demultiplex:
         barcode_table="results/{sample}/{sample}_barcode_table.txt",
         bc_frame="results/{sample}/{sample}_bc_frame.rds",
         frequency_table="results/{sample}/{sample}_frequency_table.txt",
+    log:
+        "logs/{sample}/demultiplex.log"
     shell:
-        "Rscript {script_dir}/demultiplexer.R {wildcards.sample}"
+        "Rscript {script_dir}/demultiplexer.R {wildcards.sample} > {log}"
 
 
 rule create_bc_plots:
@@ -35,5 +37,7 @@ rule filter_and_trim:
         frequency_table="results/{sample}/{sample}_selected_frequency_table.txt",
     params:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"]
+    log:
+        "logs/{sample}/demultiplex.log"
     shell:
-        "Rscript {script_dir}/filter_by_frequency.R {wildcards.sample} {params.bc_cutoff}"
+        "Rscript {script_dir}/filter_by_frequency.R {wildcards.sample} {params.bc_cutoff} > {log}"

@@ -14,3 +14,4 @@ workflow/scripts/__pycache__
 *.pyc
 workflow/.snakemake
 workflow/results
+workflow/logs

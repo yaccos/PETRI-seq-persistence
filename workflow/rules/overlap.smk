@@ -10,17 +10,21 @@ rule pear_merge:
             direction=("forward", "reverse"),
         )),
         discarded_reads=temp("results/{sample}/{sample}_QF_{lane}_p.discarded.fastq"),
+    log: "logs/{sample}/pear_merge_{lane}.log"
     shell:
-        "pear -f {input.forward} -r {input.reverse_seq} -o results/{wildcards.sample}/{wildcards.sample}_QF_{wildcards.lane}_p -v 8 -p 0.001 -n 0"
-
+        "pear -f {input.forward} -r {input.reverse_seq} "\
+        "-o results/{wildcards.sample}/{wildcards.sample}_QF_{wildcards.lane}_p -v 8 -p 0.001 -n 0 > {log}"
+        
 
 rule remove_short_reads:
     input:
         "results/{sample}/{sample}_QF_{lane}_p.assembled.fastq",
     output:
         temp("results/{sample}/{sample}_QF_{lane}_paired_min75.fastq"),
+    log:
+        "logs/{sample}/overlap_removal_{lane}.log"
     shell:
-        "cutadapt -m 75 -o {output} {input}"
+        "cutadapt -m 75 -o {output} {input} > {log}"
 
 
 rule split_R1:

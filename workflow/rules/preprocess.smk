@@ -23,5 +23,7 @@ rule quality_trim:
     output:
         forward=temp("results/{sample}/{sample}_QF_{lane}_R1.fastq"),
         reverse_seq=temp("results/{sample}/{sample}_QF_{lane}_R2.fastq"),
+    log:
+        "logs/{sample}/QF_{lane}.log"
     shell:
-        "cutadapt -q 10,10 --minimum-length 55:14 --max-n 3 --pair-filter=any -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq}"
+        "cutadapt -q 10,10 --minimum-length 55:14 --max-n 3 --pair-filter=any -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq} > {log}"
