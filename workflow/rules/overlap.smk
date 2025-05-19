@@ -71,16 +71,28 @@ rule merge_reads:
     shell:
         "cat {input.assembled} {input.unassembled} > {output}"
 
-def get_lane_files_for_merging(wildcards):
-    template = "{prefix}/{sample}_QF_merged_{lane}_{read}.fastq"
-    sample_config = processed_config[wildcards.sample]
-    lanes = sample_config["fastq"].keys()
-    return expand(template, lane = lanes, sample= wildcards.sample, prefix= wildcards.prefix, read= wildcards.read)
+# The logic here is that once R1 sequences are used for demultiplexing, they are not longer needed and can be discarded
+# before breaking out of the pipeline to determine the BC cutoff
+# R2 sequences on the other hand are used past the determination of the BC cutoff and must therefore be perserved for this purpose
 
-rule merge_lanes:
+def get_lane_files_for_merging(prefix, sample, read):
+    template = "{prefix}/{sample}_QF_merged_{lane}_{read}.fastq"
+    sample_config = processed_config[sample]
+    lanes = sample_config["fastq"].keys()
+    return expand(template, lane = lanes, sample= sample, prefix=prefix, read= read)
+
+rule merge_R1:
     input:
-        get_lane_files_for_merging,
+        lambda wildcards: get_lane_files_for_merging(wildcards.prefix, wildcards.sample, "R1"),
     output:
-        "{prefix}/{sample}_QF_merged_{read}_all_lanes.fastq",
+        temp("{prefix}/{sample}_QF_merged_R1_all_lanes.fastq"),
+    shell:
+        "cat {input} > {output}"
+
+rule merge_R2:
+    input:
+        lambda wildcards: get_lane_files_for_merging(wildcards.prefix, wildcards.sample, "R2"),
+    output:
+        "{prefix}/{sample}_QF_merged_R2_all_lanes.fastq",
     shell:
         "cat {input} > {output}"
