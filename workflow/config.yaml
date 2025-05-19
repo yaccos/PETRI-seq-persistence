@@ -1,7 +1,7 @@
 prefix: data/
 
 samples:
-  PSeqA:
+  PseqA:
     bc_cutoff: 7000
     prefix: PseqA/PseqA_
     lanes:
