@@ -57,7 +57,17 @@ rule determine_bc_cutoff:
     input:
        fastqc_output,
        intermediate_files(),
-
+    shell:
+        """
+        echo "In order to determine cutoff values, do the following:
+Copy the frequency tables (results/(sample)/(sample)_frequency_table.txt)
+to the computer of your choice.
+In a graphical interactive R session, use read.table() with header=TRUE
+to read the frequency table(s) one by one.
+Run the Shiny app posDemux::interactive_bc_cutoff() on each of these frequency tables
+and determine a suitable cutoff.
+Finally, provide the determined values in config.yaml"
+        """
 
 
 rule all:
