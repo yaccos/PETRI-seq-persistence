@@ -6,7 +6,7 @@ import scripts.handle_config as handle_config
 
 configfile: "config.yaml"
 
-report: "report/workflow.rst"
+# report: "report/workflow.rst"
 
 processed_config = handle_config.config_transform(config)
 
@@ -44,6 +44,20 @@ gene_matrix_output = expand("results/{sample}/{sample}_gene_count_matrix.txt", s
 
 knee_plot = expand("results/{sample}/{sample}_kneePlot.pdf", sample = sample_names)
 histogram = expand("results/{sample}/{sample}_ReadsPerBC.pdf", sample = sample_names)
+
+def intermediate_files():
+    samples = processed_config.keys()
+    templates = ["results/{sample}/{sample}_barcode_table.txt", "results/{sample}/{sample}_bc_frame.rds",
+     "results/{sample}/{sample}_frequency_table.txt", "results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq"]
+    files = [expand(template, sample=samples) for template in templates]
+    return files
+
+
+rule determine_bc_cutoff:
+    input:
+       fastqc_output,
+       intermediate_files(),
+
 
 
 rule all:
