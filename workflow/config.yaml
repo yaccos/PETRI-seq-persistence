@@ -3,7 +3,7 @@ prefix: data/
 samples:
   PSeqA:
     bc_cutoff: 7000
-    prefix: PSeqA/PseqA_
+    prefix: PseqA/PseqA_
     lanes:
       - L1
       - L4
