@@ -26,4 +26,5 @@ dependencies:
   - r-ggplot2
   - bioconductor-rsamtools
   - graphviz
+  - r-rcpp
 prefix: /home/japet/miniforge3/envs/petriseq
