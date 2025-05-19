@@ -36,15 +36,16 @@ rule feature_counts:
         gff=lambda wildcards: processed_config[wildcards.sample]["annotation"],
     output:
         counts=temp("results/{sample}/{sample}.featureCounts.txt"),
-        
         bam=temp("results/{sample}/{sample}_sorted.bam.featureCounts.bam"),
     log:
         report="logs/{sample}/{sample}_featureCounts.log",
         # This is really a log file
         counts_summary="logs/{sample}/{sample}.featureCounts.txt.summary",
+    params:
+        feature_tag=lambda wildcards: processed_config[wildcards.sample]["feature_tag"]
     shell:
         """
-        featureCounts -t 'Coding_or_RNA' -g 'name' -s 1 -a {input.gff} -o {output.counts} -R BAM {input.bam} 2> {log.report}
+        featureCounts -t '{params.feature_tag}' -g 'name' -s 1 -a {input.gff} -o {output.counts} -R BAM {input.bam} 2> {log.report}
         mv {output.counts}.summary {log.counts_summary}
         """
 

@@ -24,6 +24,11 @@ def process_sample(sample_contents, settings, sample_name):
         #  because it is only needed for the latter parts of the workflow
         settings["bc_cutoff"] = sample_contents["bc_cutoff"]
     
+    if "feature_tag" in sample_contents:
+        settings["feature_tag"] = sample_contents["feature_tag"]
+    elif "feature_tag" not in settings:
+        raise ValueError(f"No feature tag is defined for sample {sample_name}")
+    
     settings["forward_prefix"] = settings["prefix"] + sample_contents.get("forward_prefix", "")
     settings["reverse_prefix"] = settings["prefix"] + sample_contents.get("reverse_prefix", "")
 
@@ -53,6 +58,8 @@ def config_transform(config):
         settings["annotation"] = settings["prefix"] + config["reference_annotation"] + settings["suffix"]
     if "bc_cutoff" in config:
         settings["bc_cutoff"] = config["bc_cutoff"]
+    if "feature_tag" in config:
+        settings["feature_tag"] = config["feature_tag"]
     if "samples" not in config:
         raise ValueError("The config file must specify the samples")
     if not isinstance(config["samples"], dict):

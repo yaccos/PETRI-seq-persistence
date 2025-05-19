@@ -11,8 +11,9 @@ rule pear_merge:
         )),
         discarded_reads=temp("results/{sample}/{sample}_QF_{lane}_p.discarded.fastq"),
     log: "logs/{sample}/pear_merge_{lane}.log"
+    threads: workflow.cores
     shell:
-        "pear -f {input.forward} -r {input.reverse_seq} "\
+        "pear -f {input.forward} -r {input.reverse_seq} -j {threads} "\
         "-o results/{wildcards.sample}/{wildcards.sample}_QF_{wildcards.lane}_p -v 8 -p 0.001 -n 0 > {log}"
         
 
