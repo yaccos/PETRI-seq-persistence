@@ -1,17 +1,19 @@
 prefix: data/
 
 samples:
-  random20000:
+  PSeqA:
     bc_cutoff: 7000
-    prefix: random20000/random20000_S1_
+    prefix: PSeqA/PseqA_
     lanes:
-      - L001
-    forward_suffix: _R1
-    reverse_suffix: _R2
-    suffix: _001.fastq.gz
+      - L1
+      - L4
+    forward_suffix: _1
+    reverse_suffix: _2
+    suffix: .fq.gz
 
-reference_genome: U00096_JE2.fa
+reference_genome: GCF_000465975.2/Kp1.fa 
 
-reference_annotation: U00096_JE2_rRNA.gff
+reference_annotation: GCF_000465975.2/kp1.gff 
 
-feature_tag: Coding_or_RNA
+feature_tag: Gene
+
