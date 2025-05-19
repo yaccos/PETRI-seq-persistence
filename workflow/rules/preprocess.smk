@@ -10,9 +10,11 @@ rule fastqc:
             "results/{{sample}}/{{sample}}_{{lane}}_{{read}}_fastqc.{format}",
             format= ["html", "zip"]
         ),
+    log:
+        "logs/{sample}/{sample}_{lane}_{read}_fastqc.log"
     shell:
         # Workaround copy-catted from https://github.com/s-andrews/FastQC/issues/9
-        "cutadapt --quiet {input} | fastqc stdin:{wildcards.sample}_{wildcards.lane}_{wildcards.read} -o results/{wildcards.sample}"
+        "cutadapt --quiet {input} | fastqc stdin:{wildcards.sample}_{wildcards.lane}_{wildcards.read} -o results/{wildcards.sample} 2> {log}"
 
 
 rule quality_trim:

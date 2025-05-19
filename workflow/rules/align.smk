@@ -20,8 +20,10 @@ rule bwa_align:
         index=get_bwa_index
     output:
         temp("results/{sample}/{sample}_bwa.sai"),
+    log:
+        "logs/{sample}/bwa_aln.log"
     shell:
-        "bwa aln -n 0.06 {input.genome} {input.reads} > {output}"
+        "bwa aln -n 0.06 {input.genome} {input.reads} > {output} 2> {log}"
 
 
 # Convert SAI to SAM

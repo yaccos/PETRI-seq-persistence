@@ -32,8 +32,10 @@ rule split_R1:
         "results/{sample}/{sample}_QF_{lane}_paired_min75.fastq",
     output:
         temp("results/{sample}/{sample}_QF_{lane}_R1_paired.fastq"),
+    log:
+        "logs/{sample}/split_R1_{lane}.log"
     shell:
-        "cutadapt -l 58 -o {output} {input}"
+        "cutadapt -l 58 -o {output} {input} > {log}"
 
 
 rule split_R2:
@@ -41,8 +43,10 @@ rule split_R2:
         "results/{sample}/{sample}_QF_{lane}_paired_min75.fastq",
     output:
         temp("results/{sample}/{sample}_QF_{lane}_preR2_paired.fastq"),
+    log:
+        "logs/{sample}/split_R2_{lane}.log"
     shell:
-        "cutadapt -u 58 -o {output} {input}"
+        "cutadapt -u 58 -o {output} {input} > {log}"
 
 
 rule reverse_compliment_R2:

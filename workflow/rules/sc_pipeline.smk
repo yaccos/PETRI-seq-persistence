@@ -11,7 +11,7 @@ rule demultiplex:
     log:
         "logs/{sample}/demultiplex.log"
     shell:
-        "Rscript {script_dir}/demultiplexer.R {wildcards.sample} > {log}"
+        "Rscript {script_dir}/demultiplexer.R {wildcards.sample} &> {log}"
 
 
 rule create_bc_plots:
@@ -22,8 +22,10 @@ rule create_bc_plots:
         knee_plot="results/{sample}/{sample}_kneePlot.pdf",
     params:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"]
+    log:
+        "logs/{sample}/bc_plots.log"
     shell:
-        "Rscript {script_dir}/create_bc_plots.R {wildcards.sample} {params.bc_cutoff}"
+        "Rscript {script_dir}/create_bc_plots.R {wildcards.sample} {params.bc_cutoff} &> {log}"
 
 
 rule filter_and_trim:
@@ -40,4 +42,4 @@ rule filter_and_trim:
     log:
         "logs/{sample}/demultiplex.log"
     shell:
-        "Rscript {script_dir}/filter_by_frequency.R {wildcards.sample} {params.bc_cutoff} > {log}"
+        "Rscript {script_dir}/filter_by_frequency.R {wildcards.sample} {params.bc_cutoff} &> {log}"
