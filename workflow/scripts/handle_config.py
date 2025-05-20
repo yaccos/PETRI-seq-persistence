@@ -1,11 +1,6 @@
 # The purpose of this script is to untangle the
 # Snakemake configuration file and validate its contents
 
-def check_lane(lane):
-    if '_' in lane:
-        raise ValueError("Lane names are not allowed to have underscores")
-    return lane
-
 def process_sample(sample_contents, settings, sample_name):
     settings["prefix"] += sample_contents.get("prefix","")
     settings["suffix"] += sample_contents.get("suffix","")
@@ -35,15 +30,15 @@ def process_sample(sample_contents, settings, sample_name):
     settings["forward_suffix"] = sample_contents.get("forward_suffix", "") + settings["suffix"]
     settings["reverse_suffix"] = sample_contents.get("reverse_suffix", "") + settings["suffix"]
 
-    lanes = sample_contents.get("lanes", [""])
-    if not isinstance(lanes, list):
-        raise ValueError("The lanes field must be a simple sequence of lane names")
+    lanes = sample_contents.get("lanes", {"": ""})
+    if not isinstance(lanes, dict):
+        raise ValueError("The lanes field must be a key-value of lane names and identifiers in the input files")
     for lane in lanes:
         if '_' in lane:
             raise ValueError("Lane names are not allowed to have underscores")
         
-    settings["fastq"] = {check_lane(lane): (settings["forward_prefix"] + lane + settings["forward_suffix"],
-                           settings["reverse_prefix"] + lane + settings["reverse_suffix"]) for lane in lanes}
+    settings["fastq"] = {name: (settings["forward_prefix"] + ID + settings["forward_suffix"],
+                           settings["reverse_prefix"] + ID + settings["reverse_suffix"]) for name, ID in lanes.items()}
     
     return settings
 

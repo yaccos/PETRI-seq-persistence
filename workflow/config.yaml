@@ -5,7 +5,7 @@ samples:
     bc_cutoff: 7000
     prefix: random20000/random20000_S1_
     lanes:
-      - L001
+      L1: L001
     forward_suffix: _R1
     reverse_suffix: _R2
     suffix: _001.fastq.gz
