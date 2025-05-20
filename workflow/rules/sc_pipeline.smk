@@ -40,6 +40,6 @@ rule filter_and_trim:
     params:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"]
     log:
-        "logs/{sample}/demultiplex.log"
+        "logs/{sample}/bc_filter.log"
     shell:
         "Rscript {script_dir}/filter_by_frequency.R {wildcards.sample} {params.bc_cutoff} &> {log}"
