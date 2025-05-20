@@ -42,10 +42,11 @@ rule feature_counts:
         # This is really a log file
         counts_summary="logs/{sample}/{sample}.featureCounts.txt.summary",
     params:
-        feature_tag=lambda wildcards: processed_config[wildcards.sample]["feature_tag"]
+        feature_tag=lambda wildcards: processed_config[wildcards.sample]["feature_tag"],
+        gene_id_attribute=lambda wildcards: processed_config[wildcards.sample]["gene_id_attribute"]
     shell:
         """
-        featureCounts -t '{params.feature_tag}' -g 'name' -s 1 -a {input.gff} -o {output.counts} -R BAM {input.bam} 2> {log.report}
+        featureCounts -t '{params.feature_tag}' -g {params.gene_id_attribute} -s 1 -a {input.gff} -o {output.counts} -R BAM {input.bam} 2> {log.report}
         mv {output.counts}.summary {log.counts_summary}
         """
 

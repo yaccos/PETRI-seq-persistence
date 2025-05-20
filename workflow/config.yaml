@@ -3,10 +3,10 @@ prefix: data/
 samples:
   PseqA:
     bc_cutoff: 7000
-    prefix: PseqA/PseqA_
+    prefix: PseqA/PseqA_EKDN240010018-1A_
     lanes:
-      - L1
-      - L4
+      L1: 223YJCLT4_L1
+      L4: H77W3DSXC_L4 
     forward_suffix: _1
     reverse_suffix: _2
     suffix: .fq.gz
@@ -16,4 +16,6 @@ reference_genome: GCF_000465975.2/Kp1.fa
 reference_annotation: GCF_000465975.2/kp1.gff 
 
 feature_tag: gene
+
+gene_id_attribute: Name
 
