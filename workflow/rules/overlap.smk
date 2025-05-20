@@ -13,7 +13,7 @@ rule pear_merge:
     log: "logs/{sample}/pear_merge_{lane}.log"
     threads: workflow.cores
     shell:
-        "pear -f {input.forward} -r {input.reverse_seq} -j {threads} "\
+        "pear -f {input.forward} -r {input.reverse_seq} -j {threads} -y 500M "\
         "-o results/{wildcards.sample}/{wildcards.sample}_QF_{wildcards.lane}_p -v 8 -p 0.001 -n 0 > {log}"
         
 
