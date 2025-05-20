@@ -15,3 +15,5 @@ reference_genome: U00096_JE2.fa
 reference_annotation: U00096_JE2_rRNA.gff
 
 feature_tag: Coding_or_RNA
+
+gene_id_attribute: name

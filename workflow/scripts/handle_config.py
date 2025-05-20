@@ -24,6 +24,11 @@ def process_sample(sample_contents, settings, sample_name):
     elif "feature_tag" not in settings:
         raise ValueError(f"No feature tag is defined for sample {sample_name}")
     
+    if "gene_id_attribute" in sample_contents:
+        settings["gene_id_attribute"] = sample_contents["gene_id_attribute"]
+    elif "gene_id_attribute" not in settings:
+        raise ValueError(f"No gene identifier attribute is defined for sample {sample_name}")
+    
     settings["forward_prefix"] = settings["prefix"] + sample_contents.get("forward_prefix", "")
     settings["reverse_prefix"] = settings["prefix"] + sample_contents.get("reverse_prefix", "")
 
@@ -47,14 +52,15 @@ def config_transform(config):
     settings = {}
     settings["prefix"] = config.get("prefix","")
     settings["suffix"] = config.get("suffix", "")
+
     if "reference_genome" in config:
         settings["genome"] = settings["prefix"] + config["reference_genome"] + settings["suffix"]
     if "reference_annotation" in config:
         settings["annotation"] = settings["prefix"] + config["reference_annotation"] + settings["suffix"]
-    if "bc_cutoff" in config:
-        settings["bc_cutoff"] = config["bc_cutoff"]
-    if "feature_tag" in config:
-        settings["feature_tag"] = config["feature_tag"]
+
+    for key in ["bc_cutoff", "feature_tag", "gene_id_attribute"]:
+        if key in config:
+            settings[key] = config[key]
     if "samples" not in config:
         raise ValueError("The config file must specify the samples")
     if not isinstance(config["samples"], dict):
