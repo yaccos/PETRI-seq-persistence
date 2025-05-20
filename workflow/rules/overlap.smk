@@ -24,8 +24,9 @@ rule remove_short_reads:
         temp("results/{sample}/{sample}_QF_{lane}_paired_min75.fastq"),
     log:
         "logs/{sample}/overlap_removal_{lane}.log"
+    threads: min(3, workflow.cores)
     shell:
-        "cutadapt -m 75 -o {output} {input} > {log}"
+        "cutadapt -m 75 --cores={threads} -o {output} {input} > {log}"
 
 
 rule split_R1:
@@ -35,8 +36,9 @@ rule split_R1:
         temp("results/{sample}/{sample}_QF_{lane}_R1_paired.fastq"),
     log:
         "logs/{sample}/split_R1_{lane}.log"
+    threads: min(3, workflow.cores)
     shell:
-        "cutadapt -l 58 -o {output} {input} > {log}"
+        "cutadapt -l 58 --cores={threads} -o {output} {input} > {log}"
 
 
 rule split_R2:
@@ -46,8 +48,9 @@ rule split_R2:
         temp("results/{sample}/{sample}_QF_{lane}_preR2_paired.fastq"),
     log:
         "logs/{sample}/split_R2_{lane}.log"
+    threads: min(3, workflow.cores)
     shell:
-        "cutadapt -u 58 -o {output} {input} > {log}"
+        "cutadapt -u 58 --cores={threads} -o {output} {input} > {log}"
 
 
 rule reverse_compliment_R2:

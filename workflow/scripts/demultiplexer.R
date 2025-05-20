@@ -52,7 +52,7 @@ bc_frame$stringset <- map(bc_frame$filename, function(filepath) {
 names(bc_frame$stringset) <- bc_frame$bc_name
 
 message("Reading input sequences")
-forward_sequences <- Biostrings::readQualityScaledDNAStringSet(filepath = input_file, quality.scoring = "phred")  |> 
+forward_sequences <- Biostrings::readDNAStringSet(filepath = input_file, format = "fastq")  |> 
 trim_sequence_names()
 
 sequence_long_enough <- width(forward_sequences) >= min_sequence_length
