@@ -15,5 +15,5 @@ reference_genome: GCF_000465975.2/Kp1.fa
 
 reference_annotation: GCF_000465975.2/kp1.gff 
 
-feature_tag: Gene
+feature_tag: gene
 
