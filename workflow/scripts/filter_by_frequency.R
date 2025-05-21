@@ -1,10 +1,10 @@
-# Prologue
 suppressMessages({
     library(posDemux)
     library(Biostrings)
     library(purrr)
     library(glue)
     library(dplyr)
+    library(ShortRead)
 })
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -13,17 +13,13 @@ sample  <- args[[1L]]
 
 # sample  <- "random20000"
 
-# bc_cutoff <- 7000L
-
-bc_cutoff  <- as.integer(args[[2L]])
-
 paired_input_file <- glue("results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq")
 
 input_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
-input_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
-
 input_bc_frame  <- glue("results/{sample}/{sample}_bc_frame.rds")
+
+input_reads_to_keep  <- glue("results/{sample}/{sample}_selected_reads.txt")
 
 trim_sequence_names <- \(stringset) names(stringset) |>
     strsplit(" ") |>
@@ -35,32 +31,12 @@ message("Reading input sequences")
 reverse_sequences <- Biostrings::readQualityScaledDNAStringSet(filepath = paired_input_file, quality.scoring = "phred")  |> 
 trim_sequence_names()
 
-freq_table <- read.table(file = input_frequency_table, header = TRUE, row.names = NULL, sep = "\t")
 barcode_table  <- read.table(file = input_table_file, header = TRUE, row.names = NULL, sep = "\t")
 bc_frame  <- readRDS(input_bc_frame)
 
-# Main context
 # bc_cutoff <- posDemux::interactive_bc_cutoff(freq_table) |> print()
 
-select_reads_from_cutoff <- function(filtered_res, bc_cutoff) {
-    selected_freq_table <- dplyr::filter(freq_table, cumulative_frequency <= bc_cutoff)
-    barcodes_to_keep <- selected_freq_table[bc_frame$bc_name]
-    # barcode_table$rowID <- seq_len(nrow(barcode_table))
-    common_rows <- dplyr::inner_join(barcode_table, barcodes_to_keep, by = names(barcodes_to_keep))
-    kept_reads <- common_rows$read
-    list(retained_reads = kept_reads, frequency_table = selected_freq_table)
-}
-
-selection_res <- select_reads_from_cutoff(filtered_res, bc_cutoff)
-
-reads_to_keep <- selection_res$retained_reads
-selected_frequency_table <- selection_res$frequency_table
-
-write.table(
-    x = selected_frequency_table, file = "results/{sample}/{sample}_selected_frequency_table.txt" |> glue(),
-    sep = "\t", quote = FALSE, row.names = FALSE,
-    col.names = TRUE
-)
+reads_to_keep <- data.table::fread(input_reads_to_keep, nThread = 1L)[[1L]]
 
 reverse_sequences_to_keep <- reverse_sequences[reads_to_keep]
 selected_assigned_barcodes <- barcode_table  |> filter(read %in% reads_to_keep)
