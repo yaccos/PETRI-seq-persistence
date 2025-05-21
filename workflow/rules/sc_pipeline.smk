@@ -54,4 +54,4 @@ rule filter_and_trim:
     log:
         "logs/{sample}/R2_trim.log"
     shell:
-        "Rscript {script_dir}/filter_by_frequency.R {wildcards.sample} &> {log}"
+        "Rscript {script_dir}/filter_and_trim_R2.R {wildcards.sample} &> {log}"
