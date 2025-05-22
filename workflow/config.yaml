@@ -2,7 +2,7 @@ prefix: data/
 
 samples:
   PseqA:
-    bc_cutoff: 7000
+    bc_cutoff: 500
     prefix: PseqA/PseqA_EKDN240010018-1A_
     lanes:
       L1: 223YJCLT4_L1
