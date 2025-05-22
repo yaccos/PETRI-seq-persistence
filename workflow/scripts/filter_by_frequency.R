@@ -44,7 +44,7 @@ bc_frame  <- readRDS(input_bc_frame)
 
 select_reads_from_cutoff <- function(filtered_res, bc_cutoff) {
     # The frequency table is already sorted, so we don't have to do anything fancy here
-    selected_freq_table <- freq_table[seq_len(bc_cutoff)]
+    selected_freq_table <- freq_table[seq_len(bc_cutoff),]
     barcodes_to_keep <- selected_freq_table[bc_frame$bc_name]
     # barcode_table$rowID <- seq_len(nrow(barcode_table))
     common_rows <- dplyr::inner_join(barcode_table, barcodes_to_keep, by = names(barcodes_to_keep))
