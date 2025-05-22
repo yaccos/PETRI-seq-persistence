@@ -34,6 +34,7 @@ bc_frame  <- readRDS(input_bc_frame)
 
 reads_to_keep <- data.table::fread(input_reads_to_keep, nThread = 1L)[[1L]]
 
+<<<<<<< HEAD:workflow/scripts/filter_and_trim_R2.R
 bc1_stringset <- bc_frame$stringset$bc1
 bc2_stringset <- bc_frame$stringset$bc2
 
@@ -64,6 +65,15 @@ handle_chunk <- function(chunk, outstream) {
     chunk_bc1_assignment  <- split(seq_len(kept_reads), chunk_bc1)
 
     writeFastq(processed_reads, outstream)
+=======
+select_reads_from_cutoff <- function(filtered_res, bc_cutoff) {
+    selected_freq_table <- freq_table[seq_len(cut_cutoff)]
+    barcodes_to_keep <- selected_freq_table[bc_frame$bc_name]
+    # barcode_table$rowID <- seq_len(nrow(barcode_table))
+    common_rows <- dplyr::inner_join(barcode_table, barcodes_to_keep, by = names(barcodes_to_keep))
+    kept_reads <- common_rows$read
+    list(retained_reads = kept_reads, frequency_table = selected_freq_table)
+>>>>>>> profile:workflow/scripts/filter_by_frequency.R
 }
 
 
