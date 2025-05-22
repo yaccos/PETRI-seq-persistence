@@ -7,24 +7,22 @@ suppressMessages({
     library(ShortRead)
 })
 
+source("scripts/trim_helpers.R")
+
 args <- commandArgs(trailingOnly = TRUE)
 
 sample  <- args[[1L]]
+threads  <- args[[2L]]
+
+ShortRead:::.set_omp_threads(threads)
 
 # sample  <- "random20000"
 
 paired_input_file <- glue("results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq")
-
 input_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
-
 input_bc_frame  <- glue("results/{sample}/{sample}_bc_frame.rds")
-
 input_reads_to_keep  <- glue("results/{sample}/{sample}_selected_reads.txt")
 
-trim_sequence_names <- \(stringset) names(stringset) |>
-    strsplit(" ") |>
-    map_chr(1L)  |> 
-    `names<-`(stringset, value=_)
 
 
 message("Reading input sequences")
@@ -34,53 +32,57 @@ trim_sequence_names()
 barcode_table  <- read.table(file = input_table_file, header = TRUE, row.names = NULL, sep = "\t")
 bc_frame  <- readRDS(input_bc_frame)
 
-# bc_cutoff <- posDemux::interactive_bc_cutoff(freq_table) |> print()
-
 reads_to_keep <- data.table::fread(input_reads_to_keep, nThread = 1L)[[1L]]
 
-reverse_sequences_to_keep <- reverse_sequences[reads_to_keep]
-selected_assigned_barcodes <- barcode_table  |> filter(read %in% reads_to_keep)
+bc1_stringset <- bc_frame$stringset$bc1
+bc2_stringset <- bc_frame$stringset$bc2
 
-bc1_stringset <- bc_frame$stringset[[1]]
+message("Setting up FASTQ streams")
+
+fq_chunk_size  <- as.integer(10^6)
+fq_input_stream  <- FastqStreamer(paired_input_file, n = fq_chunk_size)
+fq_output_stream  <- FastqOutput(output_file)
+
+
+trim_sequence_names <- \(stringset) names(stringset) |>
+    strsplit(" ") |>
+    map_chr(1L)  |> 
+    `names<-`(stringset, value=_)
+
+process_chunk <- (chu)
+
+handle_chunk <- function(chunk, outstream) {
+    total_reads  <- length(chunk)
+    chunk_ids  <- id(chunk)  |> sub(" .*$", "", _)
+    keep_idx  <- chunk_ids %in% reads_to_keep  |> which()
+    kept_reads  <- length(keep_idx)
+    chunk_to_process <- chunk[keep_idx]
+    chunk_to_process_ids  <- chunk_ids[keep_idx]
+    chunk_barcode_match  <- match(chunk_to_process_ids, barcode_table$read)
+    chunk_barcodes <- barcode_table[chunk_barcode_match,]
+    chunk_bc1  <- chunk_barcodes$bc1
+    chunk_bc1_assignment  <- split(seq_len(kept_reads), chunk_bc1)
+
+    writeFastq(processed_reads, outstream)
+}
+
+
+
+
+
+
+while (length(chunk  <- yield(fq_input_stream) > 0L)){
+
+}
+
+close(fq_input_stream)
+close(fq_output_stream)
+
 bc1_selected_assigned_barcodes <- selected_assigned_barcodes[, "bc1", drop = TRUE]
 
 message("Trimming BC1 and adapters from R2")
 
-trim_bc1_from_stringset <- function(bc_string, bc_name) {
-    # This is the reverse compliment of the adapter found between BC1 and BC2
-    trimming_adapter_sequence <- "TCTGGCGTAGGAGG"
-    this_R2_sequences <- reverse_sequences_to_keep[bc1_selected_assigned_barcodes == bc_name]
 
-    adapter_match <- Biostrings::vmatchPattern(
-        pattern = trimming_adapter_sequence,
-        subject = this_R2_sequences,
-        max.mismatch = 1L,
-        with.indels = FALSE
-    )
-
-    barcode_adapter_match <- Biostrings::vmatchPattern(
-        pattern = xscat(bc_string, trimming_adapter_sequence),
-        subject = this_R2_sequences,
-        max.mismatch = 2L,
-        with.indels = FALSE
-    )
-
-    extract_first_match <- function(match_object) {
-        match_lengths <- lengths(match_object)
-        res <- rep(NA_integer_, length(this_R2_sequences))
-        sequences_with_match <- match_lengths > 0L
-        res[sequences_with_match] <- map_int(match_object[sequences_with_match] |> startIndex(), 1L)
-        res
-    }
-
-    match_results <- map(list(adapter_match, barcode_adapter_match), extract_first_match)
-    first_combined_match <- rlang::exec(pmin, !!!match_results, na.rm = TRUE)
-
-    this_trimmed_sequences <- this_R2_sequences
-    sequences_to_trim <- !is.na(first_combined_match)
-    this_trimmed_sequences[sequences_to_trim] <- subseq(this_R2_sequences[sequences_to_trim], end = first_combined_match[sequences_to_trim] - 1L)
-    list(sequences = this_trimmed_sequences, trim_count = sum(sequences_to_trim))
-}
 
 
 bc1_trimmed_R2_list <- imap(reverseComplement(bc1_stringset), trim_bc1_from_stringset)

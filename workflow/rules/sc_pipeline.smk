@@ -51,7 +51,9 @@ rule filter_and_trim:
         "results/{sample}/{sample}_selected_reads.txt"
     output:
         trimmed_sequences=temp("results/{sample}/{sample}_2trim.fastq"),
+    threads:
+        workflow.threads
     log:
         "logs/{sample}/R2_trim.log"
     shell:
-        "Rscript {script_dir}/filter_and_trim_R2.R {wildcards.sample} &> {log}"
+        "Rscript {script_dir}/filter_and_trim_R2.R {wildcards.sample} {threads} &> {log}"
