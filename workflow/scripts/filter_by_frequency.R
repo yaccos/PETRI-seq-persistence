@@ -43,7 +43,7 @@ bc_frame  <- readRDS(input_bc_frame)
 # bc_cutoff <- posDemux::interactive_bc_cutoff(freq_table) |> print()
 
 select_reads_from_cutoff <- function(filtered_res, bc_cutoff) {
-    selected_freq_table <- dplyr::filter(freq_table, cumulative_frequency <= bc_cutoff)
+    selected_freq_table <- freq_table[seq_len(cut_cutoff)]
     barcodes_to_keep <- selected_freq_table[bc_frame$bc_name]
     # barcode_table$rowID <- seq_len(nrow(barcode_table))
     common_rows <- dplyr::inner_join(barcode_table, barcodes_to_keep, by = names(barcodes_to_keep))
