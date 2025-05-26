@@ -52,7 +52,7 @@ rule filter_and_trim:
     output:
         trimmed_sequences=temp("results/{sample}/{sample}_2trim.fastq"),
     threads:
-        workflow.threads
+        workflow.cores
     log:
         "logs/{sample}/R2_trim.log"
     shell:
