@@ -53,7 +53,7 @@ filter_bc1 <- function(chunk) {
 trim_hairpins <- function(chunk) {
     chunk_bc2 <- barcodes_for_chunk(chunk, "bc2")
 
-    hairpin_filter <-  map2(chunk_bc2, bc2_stringset[names(chunk_bc2)] |> reverseComplement(),
+    hairpin_filter <-  map2(chunk_bc2, bc2_stringset[names(chunk_bc2)],
      function(seq_idxs, stringset) filter_hairpins_from_stringset(chunk[seq_idxs], stringset) )
 
     filtered_chunk <- concatenate_reads(hairpin_filter)

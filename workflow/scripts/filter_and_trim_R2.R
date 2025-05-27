@@ -49,11 +49,11 @@ report_progress <- function(counts) {
 summarize_results <- function(counts) {
     with(as.list(counts), {
     message(glue("Completed processing {total_reads} reads"))
-    message(glue("of which {selected_reads} reads ({selected_reads/total_reads*100}%) were selected from barcode frequency"))
+    message(glue("of which {selected_reads} reads ({(selected_reads/total_reads*100) |> round(2L)}%) were selected from barcode frequency"))
     message(glue("Trimmed BC1 from {bc1_trim_count} reads"))
     message(glue("Removed {n_bc1_too_short} reads that were too short after trimming"))
     message(glue("Removed {hairpin_filter_count} reads with hairpins"))
-    message(glue("A total of {kept_reads} ({kept_reads/selected_reads*100}%) of the selected reads were written to the output FASTQ file"))
+    message(glue("A total of {kept_reads} ({(kept_reads/selected_reads*100) |> round(2L)}%) of the selected reads were written to the output FASTQ file"))
     }
     )
 }
