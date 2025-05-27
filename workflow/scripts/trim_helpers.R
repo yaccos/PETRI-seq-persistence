@@ -55,7 +55,7 @@ filter_hairpins_from_stringset <- function(chunk, bc_string) {
 
 
 filter_chain <- function(...) {
-    f_list  <- as.list(...)
+    f_list  <- list(...)
     function(chunk) {
     # This is a special function which accepts a chunk and any given number of functions of the form f(chunk) -> list(chunk, counts)
     # and chains the operations the functions together
@@ -70,10 +70,7 @@ filter_chain <- function(...) {
 }
 
 ShortRead_to_Biostrings <- function(x) {
-    QualityScaledDNAStringSet(
-        sread(x),
-        quality = quality(x)
-    )
+    as(x, "QualityScaledDNAStringSet")
 }
 
 Biostrings_to_ShortRead <- function(x) {
