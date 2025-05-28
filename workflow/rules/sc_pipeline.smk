@@ -28,18 +28,32 @@ rule create_bc_plots:
         "Rscript {script_dir}/create_bc_plots.R {wildcards.sample} {params.bc_cutoff} &> {log}"
 
 
+rule select_reads:
+    input:
+        "results/{sample}/{sample}_frequency_table.txt",
+        "results/{sample}/{sample}_barcode_table.txt"
+    output:
+        "results/{sample}/{sample}_selected_frequency_table.txt",
+        temp("results/{sample}/{sample}_selected_reads.txt")
+    log: 
+        "logs/{sample}/select_reads.log"
+    params:
+        bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"]
+    shell:
+        "Rscript {script_dir}/select_reads_to_keep.R {wildcards.sample} {params.bc_cutoff} &> {log}"
+    
+
 rule filter_and_trim:
     input:
         "results/{sample}/{sample}_barcode_table.txt",
         "results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq",
         "results/{sample}/{sample}_bc_frame.rds",
-        "results/{sample}/{sample}_frequency_table.txt",
+        "results/{sample}/{sample}_selected_reads.txt"
     output:
         trimmed_sequences=temp("results/{sample}/{sample}_2trim.fastq"),
-        frequency_table="results/{sample}/{sample}_selected_frequency_table.txt",
-    params:
-        bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"]
+    threads:
+        workflow.cores
     log:
-        "logs/{sample}/bc_filter.log"
+        "logs/{sample}/R2_trim.log"
     shell:
-        "Rscript {script_dir}/filter_by_frequency.R {wildcards.sample} {params.bc_cutoff} &> {log}"
+        "Rscript {script_dir}/filter_and_trim_R2.R {wildcards.sample} {threads} &> {log}"

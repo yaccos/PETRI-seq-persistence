@@ -28,4 +28,6 @@ dependencies:
   - graphviz
   - r-rcpp
   - r-shiny
+  - bioconductor-shortread
+  - r-data.table
 prefix: /home/japet/miniforge3/envs/petriseq
