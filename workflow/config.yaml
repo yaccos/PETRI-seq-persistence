@@ -2,7 +2,7 @@ prefix: data/
 
 samples:
   random20000:
-    bc_cutoff: 7000
+    bc_cutoff: 3000
     prefix: random20000/random20000_S1_
     lanes:
       L1: L001
