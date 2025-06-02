@@ -50,9 +50,7 @@ rule filter_and_trim:
         "results/{sample}/{sample}_bc_frame.rds",
         "results/{sample}/{sample}_selected_reads.txt"
     output:
-        trimmed_sequences=temp("results/{sample}/{sample}_2trim.fastq"),
-    threads:
-        workflow.cores
+        trimmed_sequences=pipe("results/{sample}/{sample}_2trim.fastq"),
     log:
         "logs/{sample}/R2_trim.log"
     shell:

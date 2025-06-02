@@ -24,7 +24,7 @@ threads <- .Call(ShortRead:::.set_omp_threads, 1L)
 
 paired_input_file <- glue("results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq")
 input_reads_to_keep  <- glue("results/{sample}/{sample}_selected_reads.txt")
-output_file  <- glue("results/{sample}/{sample}_2trim.fastq")
+fastq_con <- glue("results/{sample}/{sample}_selected_reads.txt")
 
 reads_to_keep <- data.table::fread(input_reads_to_keep, nThread = 1L)[[1L]]
 
@@ -33,6 +33,7 @@ message("Setting up FASTQ streams")
 
 fq_chunk_size  <- as.integer(10^6)
 fq_input_stream  <- FastqStreamer(paired_input_file, n = fq_chunk_size)
+fq_output_stream  <- glue("results/{sample}/{sample}_2trim.fastq")  |> file(open = "w", blocking = FALSE)
 
 processing_chain <- filter_chain(filter_frequency, trim_bc1, filter_bc1, trim_hairpins, kept_reads_count)
 
@@ -70,10 +71,11 @@ while ((chunk  <- yield(fq_input_stream))  |> length() > 0L) {
     processing_chain()
     processed_reads <- chain_results$chunk
     counts  <- counts + chain_results$counts
-    writeQualityScaledXStringSet(processed_reads, output_file, append = TRUE)
+    writeQualityScaledXStringSet(processed_reads, output_stream)
     report_progress(counts)
 }
 
 close(fq_input_stream)
+close(fq_output_stream)
 
 summarize_results(counts)
