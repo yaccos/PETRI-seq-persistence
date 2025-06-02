@@ -4,6 +4,8 @@ suppressMessages({
     library(purrr)
     library(glue)
     library(tibble)
+    library(ShortRead)
+    library(data.table)
 })
 
 BARCODE_WIDTH <- 7L
@@ -51,6 +53,21 @@ bc_frame$stringset <- map(bc_frame$filename, function(filepath) {
 
 names(bc_frame$stringset) <- bc_frame$bc_name
 
+message("Setting up FASTQ streams")
+
+fq_chunk_size  <- as.integer(10^6)
+fq_input_stream  <- FastqStreamer(input_file, n = fq_chunk_size)
+
+report_progress <- function(counts) {
+    iteration_gap  <- as.integer(10^6)
+    with(as.list(counts), {
+        if(total_reads %% iteration_gap == 0L) {
+            message(glue("Processed {total_reads} reads, kept {kept_reads} so far..."))    
+        }
+    }
+    )
+}
+
 message("Reading input sequences")
 forward_sequences <- Biostrings::readDNAStringSet(filepath = input_file, format = "fastq")  |> 
 trim_sequence_names()
@@ -58,22 +75,54 @@ trim_sequence_names()
 sequence_long_enough <- width(forward_sequences) >= min_sequence_length
 forward_sequences <- forward_sequences[sequence_long_enough]
 
+
+
 message("Starting demultiplexing")
-demultiplex_res <- posDemux::combinatorial_demultiplex(
+
+message("Initializing counts")
+counts <- processing_chain(empty_chunk) |> _$counts
+message("Starting streaming")
+
+
+
+while ((chunk  <- yield(fq_input_stream))  |> length() > 0L) {
+    chunk_ids  <- id(chunk)  |> sub(" .*$", "", x=_)
+    chain_results <- chunk |>
+    sread()  |>
+    `names<-`(chunk_ids)
+
+    demultiplex_res <- posDemux::combinatorial_demultiplex(
     sequences = forward_sequences, barcodes = bc_frame$stringset |> rev(), segments = sequence_annotation,
     segment_lengths = segment_lengths
 )
+    filtered_res <- filter_demultiplex_res(demultiplex_res, allowed_mismatches = ALLOWED_MISMATCHES)
+
+    barcode_matrix  <- filtered_res$demultiplex_res$assigned_barcodes
+    chunk_table <- as.data.table(barcode_matrix)
+    chunk_table$read <- rownames(barcode_matrix)
+    chunk_table$UMI <- filtered_res$demultiplex_res$payload$UMI |> as.character()
+    chunk_table <- chunk_table[, c("read", "UMI", "bc3", "bc2", "bc1")]
+    fwrite(x = chunk_table, file= output_table_file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = "\t", eol = "\n")
+
+    chunk_table$UMI <- filtered_res$demultiplex_res$payload$UMI |> as.character()
+
+
+    processed_reads <- chain_results$chunk
+    counts  <- counts + chain_results$counts
+    writeQualityScaledXStringSet(processed_reads, output_file, append = TRUE)
+    report_progress(counts)
+}
 
 filtered_res <- filter_demultiplex_res(demultiplex_res, allowed_mismatches = ALLOWED_MISMATCHES)
 
 res_table <- as.data.frame(filtered_res$demultiplex_res$assigned_barcodes)
 res_table$UMI <- filtered_res$demultiplex_res$payload$UMI |> as.character()
 res_table$read <- rownames(res_table)
-res_table <- res_table[, c("read", "UMI", "bc3", "bc2", "bc1")]
+chunk_table <- res_table[, c("read", "UMI", "bc3", "bc2", "bc1")]
 
 # Export of results
 
-write.table(res_table,
+write.table(chunk_table,
     output_table_file,
     sep = "\t", quote = FALSE, row.names = FALSE,
     col.names = TRUE
