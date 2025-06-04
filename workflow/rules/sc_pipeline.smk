@@ -7,11 +7,21 @@ rule demultiplex:
     output:
         barcode_table="results/{sample}/{sample}_barcode_table.txt",
         bc_frame="results/{sample}/{sample}_bc_frame.rds",
-        frequency_table="results/{sample}/{sample}_frequency_table.txt",
     log:
         "logs/{sample}/demultiplex.log"
     shell:
         "Rscript {script_dir}/demultiplexer.R {wildcards.sample} &> {log}"
+
+
+rule generate_frequency_table:
+    input:
+        "results/{sample}/{sample}_barcode_table.txt"
+    output:
+        "results/{sample}/{sample}_frequency_table.txt"
+    log:
+        "logs/{sample}/freq_table_generation.log"
+    shell:
+        "Rscript {script_dir}/generate_frequency_table.R {wildcards.sample} &> {log}"
 
 
 rule create_bc_plots:

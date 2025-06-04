@@ -25,8 +25,6 @@ input_file <- glue("results/{sample}/{sample}_QF_merged_R1_all_lanes.fastq")
 
 output_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
-output_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
-
 output_bc_frame  <- glue("results/{sample}/{sample}_bc_frame.rds")
 
 sequence_annotation <- c(UMI = "P", "B", "A", "B", "A", "B", "A")
@@ -62,7 +60,7 @@ report_progress <- function(counts) {
     iteration_gap  <- as.integer(10^6)
     with(as.list(counts), {
         if(total_reads %% iteration_gap == 0L) {
-            message(glue("Processed {total_reads} reads, kept {kept_reads} so far..."))    
+            message(glue("Processed {total_reads} reads, successfully demultiplexed {demultiplexed_reads} so far..."))    
         }
     }
     )
@@ -75,63 +73,46 @@ trim_sequence_names()
 sequence_long_enough <- width(forward_sequences) >= min_sequence_length
 forward_sequences <- forward_sequences[sequence_long_enough]
 
-
-
-message("Starting demultiplexing")
-
-message("Initializing counts")
-counts <- processing_chain(empty_chunk) |> _$counts
-message("Starting streaming")
-
-
-
-while ((chunk  <- yield(fq_input_stream))  |> length() > 0L) {
-    chunk_ids  <- id(chunk)  |> sub(" .*$", "", x=_)
-    chain_results <- chunk |>
-    sread()  |>
-    `names<-`(chunk_ids)
-
+demultiplex_process <- function(chunk){
     demultiplex_res <- posDemux::combinatorial_demultiplex(
-    sequences = forward_sequences, barcodes = bc_frame$stringset |> rev(), segments = sequence_annotation,
+    sequences = chunk, barcodes = bc_frame$stringset |> rev(), segments = sequence_annotation,
     segment_lengths = segment_lengths
 )
     filtered_res <- filter_demultiplex_res(demultiplex_res, allowed_mismatches = ALLOWED_MISMATCHES)
 
     barcode_matrix  <- filtered_res$demultiplex_res$assigned_barcodes
-    chunk_table <- as.data.table(barcode_matrix)
+
+    dimnames(barcode_matrix)  |> print()
+
+    chunk_table <- as.data.frame(barcode_matrix)
     chunk_table$read <- rownames(barcode_matrix)
     chunk_table$UMI <- filtered_res$demultiplex_res$payload$UMI |> as.character()
+    print(colnames(chunk_table))
     chunk_table <- chunk_table[, c("read", "UMI", "bc3", "bc2", "bc1")]
-    fwrite(x = chunk_table, file= output_table_file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = "\t", eol = "\n")
-
-    chunk_table$UMI <- filtered_res$demultiplex_res$payload$UMI |> as.character()
-
-
-    processed_reads <- chain_results$chunk
-    counts  <- counts + chain_results$counts
-    writeQualityScaledXStringSet(processed_reads, output_file, append = TRUE)
-    report_progress(counts)
+    chunk_table
 }
 
-filtered_res <- filter_demultiplex_res(demultiplex_res, allowed_mismatches = ALLOWED_MISMATCHES)
 
-res_table <- as.data.frame(filtered_res$demultiplex_res$assigned_barcodes)
-res_table$UMI <- filtered_res$demultiplex_res$payload$UMI |> as.character()
-res_table$read <- rownames(res_table)
-chunk_table <- res_table[, c("read", "UMI", "bc3", "bc2", "bc1")]
+message("Initializing table")
+empty_chunk <- character() |> DNAStringSet()
+empty_chunk_table <- demultiplex_process(empty_chunk)
+# Writing the table headers to the output file
+fwrite(x = empty_chunk_table, file = output_table_file, append = FALSE, row.names = FALSE,
+ col.names = TRUE, sep = "\t", eol = "\n")
+message("Starting streaming")
 
-# Export of results
 
-write.table(chunk_table,
-    output_table_file,
-    sep = "\t", quote = FALSE, row.names = FALSE,
-    col.names = TRUE
-)
+while ((chunk  <- yield(fq_input_stream))  |> length() > 0L) {
+    chunk_ids  <- id(chunk)  |> sub(" .*$", "", x=_)
+    print(chunk_ids)
+    chunk <- chunk |>
+    sread()  |>
+    `names<-`(chunk_ids)
 
-print(filtered_res$summary_res)
+    chunk_table <- demultiplex_process(chunk)
+    fwrite(x = chunk_table, file = output_table_file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = "\t", eol = "\n")
 
-freq_table <- create_frequency_table(filtered_res$demultiplex_res$assigned_barcode)
-
-write.table(x = freq_table, file = output_frequency_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+    report_progress(counts)
+}
 
 saveRDS(object = bc_frame, file = output_bc_frame, compress = FALSE)
