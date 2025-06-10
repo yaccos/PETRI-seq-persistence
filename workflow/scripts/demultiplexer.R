@@ -66,34 +66,29 @@ report_progress <- function(counts) {
     )
 }
 
-message("Reading input sequences")
-forward_sequences <- Biostrings::readDNAStringSet(filepath = input_file, format = "fastq")  |> 
-trim_sequence_names()
-
-sequence_long_enough <- width(forward_sequences) >= min_sequence_length
-forward_sequences <- forward_sequences[sequence_long_enough]
 
 demultiplex_process <- function(chunk){
+    reads_long_enough  <- width(chunk) >= min_sequence_length
+    chunk <- chunk[reads_long_enough]
     demultiplex_res <- posDemux::combinatorial_demultiplex(
     sequences = chunk, barcodes = bc_frame$stringset |> rev(), segments = sequence_annotation,
     segment_lengths = segment_lengths
 )
     filtered_res <- filter_demultiplex_res(demultiplex_res, allowed_mismatches = ALLOWED_MISMATCHES)
-
     barcode_matrix  <- filtered_res$demultiplex_res$assigned_barcodes
-
-    dimnames(barcode_matrix)  |> print()
-
     chunk_table <- as.data.frame(barcode_matrix)
     chunk_table$read <- rownames(barcode_matrix)
+    # If the table has no rows, we may risk getting a NULL value
+    if (is.null(chunk_table$read)) {
+        chunk_table$read  <- character()
+    }
     chunk_table$UMI <- filtered_res$demultiplex_res$payload$UMI |> as.character()
-    print(colnames(chunk_table))
     chunk_table <- chunk_table[, c("read", "UMI", "bc3", "bc2", "bc1")]
     chunk_table
 }
 
 
-message("Initializing table")
+message("Initializing output table")
 empty_chunk <- character() |> DNAStringSet()
 empty_chunk_table <- demultiplex_process(empty_chunk)
 # Writing the table headers to the output file
@@ -104,7 +99,6 @@ message("Starting streaming")
 
 while ((chunk  <- yield(fq_input_stream))  |> length() > 0L) {
     chunk_ids  <- id(chunk)  |> sub(" .*$", "", x=_)
-    print(chunk_ids)
     chunk <- chunk |>
     sread()  |>
     `names<-`(chunk_ids)
@@ -112,7 +106,7 @@ while ((chunk  <- yield(fq_input_stream))  |> length() > 0L) {
     chunk_table <- demultiplex_process(chunk)
     fwrite(x = chunk_table, file = output_table_file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = "\t", eol = "\n")
 
-    report_progress(counts)
+    # report_progress(counts)
 }
 
 saveRDS(object = bc_frame, file = output_bc_frame, compress = FALSE)
