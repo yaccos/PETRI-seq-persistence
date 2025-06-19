@@ -7,22 +7,13 @@ rule demultiplex:
     output:
         barcode_table="results/{sample}/{sample}_barcode_table.txt",
         bc_frame="results/{sample}/{sample}_bc_frame.rds",
+        freq_table="results/{sample}/{sample}_frequency_table.txt"
+    params:
+        chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
     log:
         "logs/{sample}/demultiplex.log"
     shell:
-        "Rscript {script_dir}/demultiplexer.R {wildcards.sample} &> {log}"
-
-
-rule generate_frequency_table:
-    input:
-        "results/{sample}/{sample}_barcode_table.txt"
-    output:
-        "results/{sample}/{sample}_frequency_table.txt"
-    log:
-        "logs/{sample}/freq_table_generation.log"
-    shell:
-        "Rscript {script_dir}/generate_frequency_table.R {wildcards.sample} &> {log}"
-
+        "Rscript {script_dir}/demultiplexer.R {wildcards.sample} {params.chunk_size}  &> {log}"
 
 rule create_bc_plots:
     input:
@@ -61,9 +52,11 @@ rule filter_and_trim:
         "results/{sample}/{sample}_selected_reads.txt"
     output:
         trimmed_sequences=temp("results/{sample}/{sample}_2trim.fastq"),
+    params:
+        chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
     threads:
         workflow.cores
     log:
         "logs/{sample}/R2_trim.log"
     shell:
-        "Rscript {script_dir}/filter_and_trim_R2.R {wildcards.sample} {threads} &> {log}"
+        "Rscript {script_dir}/filter_and_trim_R2.R {wildcards.sample} {params.chunk_size} &> {log}"

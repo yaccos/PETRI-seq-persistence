@@ -15,6 +15,8 @@ args <- commandArgs(trailingOnly = TRUE)
 
 sample  <- args[[1L]]
 
+chunk_size <- args[[2L]] |> as.integer()
+
 bc_frame <- tibble(bc_name = glue("bc{1:3}"))
 
 barcode_file_prefix <- glue("data/sc_barcodes_v2/")
@@ -27,16 +29,11 @@ output_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
 output_bc_frame  <- glue("results/{sample}/{sample}_bc_frame.rds")
 
+output_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
+
 sequence_annotation <- c(UMI = "P", "B", "A", "B", "A", "B", "A")
 
 segment_lengths <- c(7L, 7L, 15L, 7L, 14L, 7L, NA_integer_)
-
-min_sequence_length <- sum(head(segment_lengths, -1L))
-
-trim_sequence_names <- \(stringset) names(stringset) |>
-    strsplit(" ") |>
-    map_chr(1L)  |> 
-    `names<-`(stringset, value=_)
 
 
 bc_frame$filename <- paste0(barcode_file_prefix, barcode_file_name_main)
@@ -51,62 +48,19 @@ bc_frame$stringset <- map(bc_frame$filename, function(filepath) {
 
 names(bc_frame$stringset) <- bc_frame$bc_name
 
-message("Setting up FASTQ streams")
+callbacks <- streaming_callbacks(input_file = input_file,
+                                 output_table_file = output_table_file,
+                                 chunk_size = chunk_size,
+                                 verbose = TRUE)
 
-fq_chunk_size  <- as.integer(10^6)
-fq_input_stream  <- FastqStreamer(input_file, n = fq_chunk_size)
+streaming_res <- rlang::exec(streaming_demultiplex, !!! callbacks,
+                             barcodes=bc_frame$stringset |> rev(), allowed_mismatches = 1L,
+            segments = sequence_annotation, segment_lengths = segment_lengths)
 
-report_progress <- function(counts) {
-    iteration_gap  <- as.integer(10^6)
-    with(as.list(counts), {
-        if(total_reads %% iteration_gap == 0L) {
-            message(glue("Processed {total_reads} reads, successfully demultiplexed {demultiplexed_reads} so far..."))    
-        }
-    }
-    )
-}
-
-
-demultiplex_process <- function(chunk){
-    reads_long_enough  <- width(chunk) >= min_sequence_length
-    chunk <- chunk[reads_long_enough]
-    demultiplex_res <- posDemux::combinatorial_demultiplex(
-    sequences = chunk, barcodes = bc_frame$stringset |> rev(), segments = sequence_annotation,
-    segment_lengths = segment_lengths
-)
-    filtered_res <- filter_demultiplex_res(demultiplex_res, allowed_mismatches = ALLOWED_MISMATCHES)
-    barcode_matrix  <- filtered_res$demultiplex_res$assigned_barcodes
-    chunk_table <- as.data.frame(barcode_matrix)
-    chunk_table$read <- rownames(barcode_matrix)
-    # If the table has no rows, we may risk getting a NULL value
-    if (is.null(chunk_table$read)) {
-        chunk_table$read  <- character()
-    }
-    chunk_table$UMI <- filtered_res$demultiplex_res$payload$UMI |> as.character()
-    chunk_table <- chunk_table[, c("read", "UMI", "bc3", "bc2", "bc1")]
-    chunk_table
-}
-
-
-message("Initializing output table")
-empty_chunk <- character() |> DNAStringSet()
-empty_chunk_table <- demultiplex_process(empty_chunk)
-# Writing the table headers to the output file
-fwrite(x = empty_chunk_table, file = output_table_file, append = FALSE, row.names = FALSE,
- col.names = TRUE, sep = "\t", eol = "\n")
-message("Starting streaming")
-
-
-while ((chunk  <- yield(fq_input_stream))  |> length() > 0L) {
-    chunk_ids  <- id(chunk)  |> sub(" .*$", "", x=_)
-    chunk <- chunk |>
-    sread()  |>
-    `names<-`(chunk_ids)
-
-    chunk_table <- demultiplex_process(chunk)
-    fwrite(x = chunk_table, file = output_table_file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = "\t", eol = "\n")
-
-    # report_progress(counts)
-}
+freq_table  <- streaming_res$freq_table
+message("Writing frequency table...")
+data.table::fwrite(x = freq_table, file = output_frequency_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+cat("\n")
+print(streaming_res$summary_res)
 
 saveRDS(object = bc_frame, file = output_bc_frame, compress = FALSE)
