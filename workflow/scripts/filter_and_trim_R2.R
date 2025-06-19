@@ -37,11 +37,8 @@ fq_input_stream  <- FastqStreamer(paired_input_file, n = fq_chunk_size)
 processing_chain <- filter_chain(filter_frequency, trim_bc1, filter_bc1, trim_hairpins, kept_reads_count)
 
 report_progress <- function(counts) {
-    iteration_gap  <- as.integer(10^6)
     with(as.list(counts), {
-        if(total_reads %% iteration_gap == 0L) {
-            message(glue("Processed {total_reads} reads, kept {kept_reads} so far..."))    
-        }
+        message(glue("Processed {total_reads} reads, kept {kept_reads} so far..."))    
     }
     )
 }
