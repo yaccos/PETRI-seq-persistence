@@ -12,6 +12,10 @@ workflow/scripts/__pycache__
 *fa.ann
 *fa.amb
 *.pyc
+workflow/data/Pseq*
 workflow/.snakemake
 workflow/results
 workflow/logs
+workflow/data/GCA*
+workflow/data/GCF*
+*.html

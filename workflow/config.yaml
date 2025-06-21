@@ -2,7 +2,7 @@ prefix: data/
 
 samples:
   PseqA:
-    bc_cutoff: 500
+    bc_cutoff: 14000
     prefix: PseqA/PseqA_EKDN240010018-1A_
     lanes:
       L1: 223YJCLT4_L1
@@ -10,6 +10,7 @@ samples:
     forward_suffix: _1
     reverse_suffix: _2
     suffix: .fq.gz
+
 
 reference_genome: GCF_000465975.2/Kp1.fa 
 
