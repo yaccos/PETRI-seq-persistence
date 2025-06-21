@@ -29,6 +29,11 @@ def process_sample(sample_contents, settings, sample_name):
     elif "gene_id_attribute" not in settings:
         raise ValueError(f"No gene identifier attribute is defined for sample {sample_name}")
     
+    if "streaming_chunk_size" in sample_contents:
+        settings["chunk_size"] = sample_contents["streaming_chunk_size"]
+    elif "chunk_size" not in settings:
+        raise ValueError(f"No chunk size for FASTQ streaming is defined for sample {sample_name}")
+    
     settings["forward_prefix"] = settings["prefix"] + sample_contents.get("forward_prefix", "")
     settings["reverse_prefix"] = settings["prefix"] + sample_contents.get("reverse_prefix", "")
 
@@ -53,6 +58,8 @@ def config_transform(config):
     settings["prefix"] = config.get("prefix","")
     settings["suffix"] = config.get("suffix", "")
 
+    if "streaming_chunk_size" in config:
+        settings["chunk_size"] = config["streaming_chunk_size"]
     if "reference_genome" in config:
         settings["genome"] = settings["prefix"] + config["reference_genome"] + settings["suffix"]
     if "reference_annotation" in config:

@@ -32,9 +32,10 @@ trim_sequence_names <- \(stringset) names(stringset) |>
 freq_table <- read.table(file = input_frequency_table, header = TRUE, row.names = NULL, sep = "\t")
 
 selected_freq_table <- freq_table[seq_len(bc_cutoff),]
+
 barcodes_to_keep <- selected_freq_table[bc_names]
-common_rows <- dplyr::inner_join(barcode_table, barcodes_to_keep, by = names(barcodes_to_keep))
-kept_reads <- common_rows$read
+common_rows <- posDemux::row_match(barcode_table, selected_freq_table)
+kept_reads <- barcode_table$read[common_rows]
 
 write.table(
     x = selected_freq_table, file = "results/{sample}/{sample}_selected_frequency_table.txt" |> glue(),

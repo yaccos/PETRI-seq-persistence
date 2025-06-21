@@ -4,6 +4,8 @@ suppressMessages({
     library(purrr)
     library(glue)
     library(tibble)
+    library(ShortRead)
+    library(data.table)
 })
 
 BARCODE_WIDTH <- 7L
@@ -12,6 +14,8 @@ ALLOWED_MISMATCHES <- 1L
 args <- commandArgs(trailingOnly = TRUE)
 
 sample  <- args[[1L]]
+
+chunk_size <- args[[2L]] |> as.integer()
 
 bc_frame <- tibble(bc_name = glue("bc{1:3}"))
 
@@ -23,20 +27,13 @@ input_file <- glue("results/{sample}/{sample}_QF_merged_R1_all_lanes.fastq")
 
 output_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
-output_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
-
 output_bc_frame  <- glue("results/{sample}/{sample}_bc_frame.rds")
+
+output_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
 
 sequence_annotation <- c(UMI = "P", "B", "A", "B", "A", "B", "A")
 
 segment_lengths <- c(7L, 7L, 15L, 7L, 14L, 7L, NA_integer_)
-
-min_sequence_length <- sum(head(segment_lengths, -1L))
-
-trim_sequence_names <- \(stringset) names(stringset) |>
-    strsplit(" ") |>
-    map_chr(1L)  |> 
-    `names<-`(stringset, value=_)
 
 
 bc_frame$filename <- paste0(barcode_file_prefix, barcode_file_name_main)
@@ -51,38 +48,19 @@ bc_frame$stringset <- map(bc_frame$filename, function(filepath) {
 
 names(bc_frame$stringset) <- bc_frame$bc_name
 
-message("Reading input sequences")
-forward_sequences <- Biostrings::readDNAStringSet(filepath = input_file, format = "fastq")  |> 
-trim_sequence_names()
+callbacks <- streaming_callbacks(input_file = input_file,
+                                 output_table_file = output_table_file,
+                                 chunk_size = chunk_size,
+                                 verbose = TRUE)
 
-sequence_long_enough <- width(forward_sequences) >= min_sequence_length
-forward_sequences <- forward_sequences[sequence_long_enough]
+streaming_res <- rlang::exec(streaming_demultiplex, !!! callbacks,
+                             barcodes=bc_frame$stringset |> rev(), allowed_mismatches = 1L,
+            segments = sequence_annotation, segment_lengths = segment_lengths)
 
-message("Starting demultiplexing")
-demultiplex_res <- posDemux::combinatorial_demultiplex(
-    sequences = forward_sequences, barcodes = bc_frame$stringset |> rev(), segments = sequence_annotation,
-    segment_lengths = segment_lengths
-)
-
-filtered_res <- filter_demultiplex_res(demultiplex_res, allowed_mismatches = ALLOWED_MISMATCHES)
-
-res_table <- as.data.frame(filtered_res$demultiplex_res$assigned_barcodes)
-res_table$UMI <- filtered_res$demultiplex_res$payload$UMI |> as.character()
-res_table$read <- rownames(res_table)
-res_table <- res_table[, c("read", "UMI", "bc3", "bc2", "bc1")]
-
-# Export of results
-
-write.table(res_table,
-    output_table_file,
-    sep = "\t", quote = FALSE, row.names = FALSE,
-    col.names = TRUE
-)
-
-print(filtered_res$summary_res)
-
-freq_table <- create_frequency_table(filtered_res$demultiplex_res$assigned_barcode)
-
-write.table(x = freq_table, file = output_frequency_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+freq_table  <- streaming_res$freq_table
+message("Writing frequency table...")
+data.table::fwrite(x = freq_table, file = output_frequency_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+cat("\n")
+print(streaming_res$summary_res)
 
 saveRDS(object = bc_frame, file = output_bc_frame, compress = FALSE)

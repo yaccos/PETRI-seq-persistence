@@ -20,3 +20,4 @@ feature_tag: gene
 
 gene_id_attribute: Name
 
+streaming_chunk_size: 1e6

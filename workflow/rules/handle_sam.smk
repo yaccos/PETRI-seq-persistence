@@ -1,4 +1,4 @@
-# Removes the XT tag from the sam file because it reportably interfer with featureCount
+# Removes the XT tag from the sam file because it reportably interfer with featureCounts
 rule remove_xt_tags:
     input:
         "results/{sample}/{sample}_bwa.sam",

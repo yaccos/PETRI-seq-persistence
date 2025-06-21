@@ -12,14 +12,10 @@ args <- commandArgs(trailingOnly = TRUE)
 # We must parse the arguments before sourcing the scripts because the scripts need to read 
 # files of their own
 sample  <- args[[1L]]
-threads  <- args[[2L]]
+chunk_size <- args[[2L]] |> as.integer()
 
 source("scripts/trim_filters.R")
-
-
-# HACK: We want to be able to control the number of threads used by ShortRead when parsing and writing FASTQ files
-# According to the ShortRead documentation, this is the way to proceed even though it requires us to use an unexported function
-threads <- .Call(ShortRead:::.set_omp_threads, 1L) 
+ 
 
 
 paired_input_file <- glue("results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq")
@@ -31,17 +27,13 @@ reads_to_keep <- data.table::fread(input_reads_to_keep, nThread = 1L)[[1L]]
 
 message("Setting up FASTQ streams")
 
-fq_chunk_size  <- as.integer(10^6)
-fq_input_stream  <- FastqStreamer(paired_input_file, n = fq_chunk_size)
+fq_input_stream  <- FastqStreamer(paired_input_file, n = chunk_size)
 
 processing_chain <- filter_chain(filter_frequency, trim_bc1, filter_bc1, trim_hairpins, kept_reads_count)
 
 report_progress <- function(counts) {
-    iteration_gap  <- as.integer(10^6)
     with(as.list(counts), {
-        if(total_reads %% iteration_gap == 0L) {
-            message(glue("Processed {total_reads} reads, kept {kept_reads} so far..."))    
-        }
+        message(glue("Processed {total_reads} reads, kept {kept_reads} so far..."))    
     }
     )
 }
