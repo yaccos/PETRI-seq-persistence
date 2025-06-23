@@ -14,8 +14,7 @@ args <- commandArgs(trailingOnly = TRUE)
 sample  <- args[[1L]]
 chunk_size <- args[[2L]] |> as.integer()
 
-source("scripts/trim_filters.R")
- 
+source("scripts/trim_filters.R") 
 
 
 paired_input_file <- glue("results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq")

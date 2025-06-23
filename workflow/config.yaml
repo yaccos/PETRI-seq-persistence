@@ -39,9 +39,9 @@ samples:
     suffix: .fq.gz
 
 
-reference_genome: GCF_000465975.2/Kp1.fa 
+reference_genome: GCF_021228175.1/GCF_021228175.1_ASM2122817v1_genomic.fna 
 
-reference_annotation: GCF_000465975.2/kp1.gff 
+reference_annotation: GCF_021228175.1/genomic.gff
 
 feature_tag: gene
 
