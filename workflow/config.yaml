@@ -10,6 +10,33 @@ samples:
     forward_suffix: _1
     reverse_suffix: _2
     suffix: .fq.gz
+  PseqB:
+    bc_cutoff: 14000
+    prefix: PseqB/PseqB_EKDN240010019-1A_
+    lanes:
+      L1: 223WMMLT4_L1
+      L4: H77W3DSXC_L4 
+    forward_suffix: _1
+    reverse_suffix: _2
+    suffix: .fq.gz
+  PseqC:
+    bc_cutoff: 14000
+    prefix: PseqC/PseqC_EKDN240010020-1A_
+    lanes:
+      L1: 223YJCLT4_L1
+      L2: H77W3DSXC_L2 
+    forward_suffix: _1
+    reverse_suffix: _2
+    suffix: .fq.gz
+  PseqD:
+    bc_cutoff: 14000
+    prefix: PseqD/PseqD_EKDN240010021-1A_
+    lanes:
+      L1: 223YJCLT4_L1
+      L4: H77W3DSXC_L4 
+    forward_suffix: _1
+    reverse_suffix: _2
+    suffix: .fq.gz
 
 
 reference_genome: GCF_000465975.2/Kp1.fa 
