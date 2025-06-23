@@ -2,9 +2,9 @@ bwa_index_extensions = [".bwt", ".amb", ".pac", ".sa", ".ann"]
 
 rule bwa_index:
     input:
-        "data/{genome}.fa",
+        "data/{genome}",
     output:
-        temp(multiext("data/{genome}.fa", *bwa_index_extensions)),
+        temp(multiext("data/{genome}", *bwa_index_extensions)),
     log:
         "logs/{genome}_index.log"
     shell:
