@@ -54,8 +54,6 @@ rule filter_and_trim:
         trimmed_sequences=temp("results/{sample}/{sample}_2trim.fastq"),
     params:
         chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
-    threads:
-        workflow.cores
     log:
         "logs/{sample}/R2_trim.log"
     shell:

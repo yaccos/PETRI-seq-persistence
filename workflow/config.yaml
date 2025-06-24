@@ -19,3 +19,7 @@ feature_tag: Coding_or_RNA
 gene_id_attribute: name
 
 streaming_chunk_size: 4000
+
+diamond_database: nr.dmnd
+
+megan_database: megan-map-Feb2022.db

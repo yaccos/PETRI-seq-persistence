@@ -12,6 +12,12 @@ workflow/scripts/__pycache__
 *fa.ann
 *fa.amb
 *.pyc
+*.dmnd
+Pseq*
+GCA*
+GCF*
+nr.gz
+megan-map-*
 workflow/.snakemake
 workflow/results
 workflow/logs
