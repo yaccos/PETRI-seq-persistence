@@ -48,3 +48,7 @@ feature_tag: gene
 gene_id_attribute: Name
 
 streaming_chunk_size: 1e6
+
+diamond_database: nr.dmnd
+
+megan_database: megan-map-Feb2022.db

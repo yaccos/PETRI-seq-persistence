@@ -25,6 +25,7 @@ include: "rules/overlap.smk"
 include: "rules/sc_pipeline.smk"
 include: "rules/align.smk"
 include: "rules/handle_sam.smk"
+include: "rules/metagenomics.smk"
 
 def expand_fastqc(sample):
     sample_config = processed_config[sample]
@@ -68,6 +69,10 @@ Run the Shiny app posDemux::interactive_bc_cutoff() on each of these frequency t
 and determine a suitable cutoff.
 Finally, provide the determined values in config.yaml"
         """
+
+rule diamond_megan:
+    input:
+        expand("results/{sample}/{sample}_diamond.meganized.daa", sample=sample_names)
 
 
 rule all:

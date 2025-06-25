@@ -30,4 +30,6 @@ dependencies:
   - r-shiny
   - bioconductor-shortread
   - r-data.table
+  - diamond
+  - megan
 prefix: /home/japet/miniforge3/envs/petriseq

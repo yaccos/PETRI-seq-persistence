@@ -19,6 +19,12 @@ def process_sample(sample_contents, settings, sample_name):
         #  because it is only needed for the latter parts of the workflow
         settings["bc_cutoff"] = sample_contents["bc_cutoff"]
     
+    if "diamond_database" in sample_contents:
+        settings["diamond_database"] = sample_contents["diamond_database"]
+    
+    if "megan_database" in sample_contents:
+        settings["megan_database"] = sample_contents["megan_database"]
+
     if "feature_tag" in sample_contents:
         settings["feature_tag"] = sample_contents["feature_tag"]
     elif "feature_tag" not in settings:
@@ -64,10 +70,15 @@ def config_transform(config):
         settings["genome"] = settings["prefix"] + config["reference_genome"] + settings["suffix"]
     if "reference_annotation" in config:
         settings["annotation"] = settings["prefix"] + config["reference_annotation"] + settings["suffix"]
+    if "diamond_database" in config:
+        settings["diamond_database"] = settings["prefix"] + config["diamond_database"] + settings["suffix"]
+    if "megan_database" in config:
+        settings["megan_database"] = settings["prefix"] + config["megan_database"] + settings["suffix"]
 
     for key in ["bc_cutoff", "feature_tag", "gene_id_attribute"]:
         if key in config:
             settings[key] = config[key]
+
     if "samples" not in config:
         raise ValueError("The config file must specify the samples")
     if not isinstance(config["samples"], dict):
