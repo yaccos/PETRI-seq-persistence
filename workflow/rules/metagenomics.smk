@@ -15,7 +15,7 @@ rule diamond:
         reads="results/{sample}/{sample}_2trim.fastq",
         database=lambda wildcards: processed_config[wildcards.sample]["diamond_database"]
     output:
-        temp("results/{sample}/{sample}_diamond.daa"),
+        "results/{sample}/{sample}_diamond.daa",
     log:
         "logs/{sample}/diamond.log"
     params:
@@ -36,5 +36,5 @@ rule meganize:
     shell:
         """
         cp {input.daa} {output}
-        daa-meganize -i {input.daa} -mdf {input.database} --threads {params.threads} 2> {log}
+        daa-meganizer -i {output} -mdb {input.database} --threads {params.threads} 2> {log}
         """
