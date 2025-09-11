@@ -19,3 +19,7 @@ workflow/logs
 workflow/data/GCA*
 workflow/data/GCF*
 *.html
+*.dmnd
+nr.gz
+megan-map-*
+
