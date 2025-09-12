@@ -2,7 +2,7 @@ prefix: data/
 
 samples:
   PETRI-seq-2.01:
-    prefix: GSE141018
+    prefix: GSE141018/
     lanes:
       L1: SRR11584024
       L2: SRR11584025
