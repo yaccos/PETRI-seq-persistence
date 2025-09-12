@@ -30,4 +30,5 @@ dependencies:
   - r-shiny
   - bioconductor-shortread
   - r-data.table
+  - sra-tools
 prefix: /home/japet/miniforge3/envs/petriseq
