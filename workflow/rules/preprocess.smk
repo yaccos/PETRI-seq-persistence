@@ -30,4 +30,4 @@ rule quality_trim:
     log:
         "logs/{sample}/QF_{lane}.log"
     shell:
-        "cutadapt -q 10,10 --minimum-length 55:14 --max-n 3 --cores={threads} --pair-filter=any -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq} > {log}"
+        "cutadapt -q 10,10 --minimum-length 58:14 --max-n 3 --cores={threads} --pair-filter=any -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq} > {log}"
