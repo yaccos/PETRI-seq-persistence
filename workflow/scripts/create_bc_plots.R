@@ -16,7 +16,7 @@ n_reads <- freq_table$frequency  |> sum()
 
 plot_title <- glue("{sample}, n_reads={n_reads}") |> ggtitle()
 
-freq_plot <- frequency_plot(freq_table, cutoff = bc_cutoff |> bc_to_frequency_cutoff(frequency_table = freq_table), type = "density", log_scale = TRUE) + plot_title
+freq_plot <- frequency_plot(freq_table, cutoff = bc_cutoff |> bc_to_frequency_cutoff(frequency_table = freq_table), type = "density", log_scale_x = TRUE, scale_by_reads = TRUE) + plot_title
 knee_plot <- knee_plot(freq_table, cutoff = bc_cutoff) + plot_title
 
 ggsave(filename = "results/{sample}/{sample}_ReadsPerBC.pdf" |> glue(), plot = freq_plot)
