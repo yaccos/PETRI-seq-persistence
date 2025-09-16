@@ -12,7 +12,7 @@ samples:
     suffix: .fastq
   
 
-reference_genome: U000096_JE2.fa 
+reference_genome: U00096_JE2.fa 
 
 reference_annotation: U000096_JE2_rRNA.gff 
 
