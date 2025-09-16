@@ -2,6 +2,7 @@ prefix: data/
 
 samples:
   PETRI-seq-2.01:
+    bc_cutoff: 10000
     prefix: GSE141018/
     lanes:
       L1: SRR11584024
