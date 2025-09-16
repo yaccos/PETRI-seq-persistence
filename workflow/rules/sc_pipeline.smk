@@ -55,7 +55,9 @@ rule filter_and_trim:
     params:
         chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
     threads:
-        workflow.cores
+        # shortReads' FASTQ parser does have multithreading support, but in practice, this is not utilized
+        # The same goes for the demultiplexer 
+        1
     log:
         "logs/{sample}/R2_trim.log"
     shell:
