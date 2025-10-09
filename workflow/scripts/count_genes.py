@@ -33,16 +33,6 @@ def get_contig(read: pysam.AlignedSegment):
     num_matches = int(read.get_tag("X0"))
     if num_matches <= 1:
         return proposed_contig
-    
-    if not read.has_tag("XA"):
-        return "ambiguous"
-    
-    edit_dist = read.get_tag("NM")
-    match_list = read.get_tag("XA").split(';')
-
-    for entry in match_list:
-        if entry != '' and entry.split(',')[3] == edit_dist and entry.split(',')[0] not in proposed_contig:
-                    return 'ambiguous'
         
     return proposed_contig
 
@@ -92,7 +82,7 @@ res_list = [(key.barcode, f"{key.contig}:{key.gene}", value)
                  for key, value in cell_UMI_summary.items()] 
 res_frame = (
      pd.DataFrame.from_records(res_list, columns=["Cell Barcode","contig_gene","count"]).
-     pivot_table(index="Cell Barcode", columns="contig_gene", values="count", fill_value=0)
+     pivot_table(index="Cell Barcode", columns="contig_gene", values="count", aggfunc='sum', fill_value=0)
 )
 
 res_frame.to_csv(f"../results/{sample}/{sample}_gene_count_matrix.txt",sep='\t')
