@@ -9,8 +9,6 @@ dependencies:
   - subread
   - bwa
   - pandas
-  - numpy
-  - matplotlib
   - samtools
   - ipython
   - pear
