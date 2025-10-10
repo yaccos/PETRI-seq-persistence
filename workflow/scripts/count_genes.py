@@ -2,7 +2,7 @@ import pysam
 import pandas as pd
 import sys
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict
 import umi_tools
 
 @dataclass(frozen=True)
@@ -21,19 +21,10 @@ def get_gene(read: pysam.AlignedSegment):
             gene = 'ambiguous'
     else:
         gene = 'no_feature'
-    
     return gene
 
 def get_contig(read: pysam.AlignedSegment):
     proposed_contig = read.reference_name
-    if proposed_contig == "CP000255":
-         pass
-    if not read.has_tag("X0"):
-        return proposed_contig
-    num_matches = int(read.get_tag("X0"))
-    if num_matches <= 1:
-        return proposed_contig
-        
     return proposed_contig
 
 def get_alignment_status(read: pysam.AlignedSegment):
@@ -45,17 +36,16 @@ def get_alignment_status(read: pysam.AlignedSegment):
     gene = get_gene(read)
     return contig, gene
 
-# sample = sys.argv[1]
-sample = "random20000"
-barcode_table_file = f"../results/{sample}/{sample}_barcode_table.txt"
+threshold = int(sys.argv[1])
+sample = sys.argv[2]
+barcode_table_file = f"results/{sample}/{sample}_barcode_table.txt"
 barcode_table = pd.read_table(barcode_table_file).set_index("read").sort_index()
 barcode_table["celltag"] = barcode_table[["bc1", "bc2", "bc3"]].agg('_'.join, axis=1)
-bam_file_path = f"../results/{sample}/{sample}_sorted.bam.featureCounts.bam"
+bam_file_path = f"results/{sample}/{sample}_sorted.bam.featureCounts.bam"
 bamfile = pysam.AlignmentFile(bam_file_path, "rb")
 cell_UMI_count: Dict[BarcodeGene, Dict[bytes, int]] = {}
 for read in bamfile.fetch():
     read_name = str(read.query_name)
-    
     if read_name not in barcode_table.index:
          # Read is filtered out
          continue
@@ -82,7 +72,8 @@ res_list = [(key.barcode, f"{key.contig}:{key.gene}", value)
                  for key, value in cell_UMI_summary.items()] 
 res_frame = (
      pd.DataFrame.from_records(res_list, columns=["Cell Barcode","contig_gene","count"]).
+     loc[lambda df: df["count"] > threshold].
      pivot_table(index="Cell Barcode", columns="contig_gene", values="count", aggfunc='sum', fill_value=0)
 )
 
-res_frame.to_csv(f"../results/{sample}/{sample}_gene_count_matrix.txt",sep='\t')
+res_frame.to_csv(f"results/{sample}/{sample}_gene_count_matrix.txt",sep='\t')
