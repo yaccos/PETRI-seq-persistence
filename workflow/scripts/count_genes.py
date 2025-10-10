@@ -75,6 +75,7 @@ for read in bamfile.fetch():
     if read_name not in barcode_table.index:
          # Read is filtered out
          continue
+    read_count += 1
     contig, gene = get_alignment_status(read)
     if contig == 'ambiguous' or gene == "ambiguous":
          continue
@@ -87,9 +88,8 @@ for read in bamfile.fetch():
          cell_UMI_count[read_key][cell_umi] = 1
     else:
          cell_UMI_count[read_key][cell_umi] += 1
-    read_count += 1
-    if read_count % iteration_gap == 0 and read_count > 0:
-        logging.info(f"Parsed {read_count + 1} reads")
+    if read_count % iteration_gap == 0:
+        logging.info(f"Parsed {read_count} reads")
 
 
 logging.info(f"Deduplicating UMIs")
