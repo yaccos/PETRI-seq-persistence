@@ -66,7 +66,10 @@ rule count_genes:
         bai="results/{sample}/{sample}_sorted.bam.featureCounts.bam.bai",
         barcode_table="results/{sample}/{sample}_barcode_table.txt",
     output:
-        "results/{sample}/{sample}_gene_count_matrix.txt",
+        "results/{sample}/{sample}_gene_count_matrix.txt"
+    log: "logs/{sample}/{sample}_count_genes.log"
+    threads: workflow.cores
+    params:
+        chunk_size=1000
     shell:
-        "python {script_dir}/count_genes.py 0 {wildcards.sample}"
-        
+        "python {script_dir}/count_genes.py 0 {wildcards.sample} {threads} {params.chunk_size} 2> {log}"
