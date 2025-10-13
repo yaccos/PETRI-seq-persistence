@@ -96,7 +96,7 @@ for read in bamfile.fetch(until_eof=True):
 
 logging.info(f"Deduplicating UMIs")
 with multiprocessing.Pool(n_cores) as p:
-    res_list = p.map(create_count_record, cell_UMI_count.items())
+    res_list = p.map(create_count_record, cell_UMI_count.items(),chunksize=chunk_size)
 
 logging.info(f"Preparing results")
 
