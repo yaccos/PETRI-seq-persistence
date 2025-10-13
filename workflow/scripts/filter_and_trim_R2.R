@@ -14,18 +14,12 @@ args <- commandArgs(trailingOnly = TRUE)
 sample  <- args[[1L]]
 chunk_size <- args[[2L]] |> as.integer()
 
-<<<<<<< HEAD
-source("scripts/trim_filters.R") 
-=======
 source("scripts/trim_filters.R")
 
 log_progress <- function(msg) {
     message(glue("{date()} => {msg}"))
 }
  
->>>>>>> profile
-
-
 paired_input_file <- glue("results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq")
 input_reads_to_keep  <- glue("results/{sample}/{sample}_selected_reads.txt")
 output_file  <- glue("results/{sample}/{sample}_2trim.fastq")
