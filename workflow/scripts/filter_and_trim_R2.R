@@ -15,6 +15,10 @@ sample  <- args[[1L]]
 chunk_size <- args[[2L]] |> as.integer()
 
 source("scripts/trim_filters.R")
+
+log_progress <- function(msg) {
+    message(glue("{date()} => {msg}"))
+}
  
 
 
@@ -25,7 +29,7 @@ output_file  <- glue("results/{sample}/{sample}_2trim.fastq")
 reads_to_keep <- data.table::fread(input_reads_to_keep, nThread = 1L)[[1L]]
 
 
-message("Setting up FASTQ streams")
+log_progress("Setting up FASTQ streams")
 
 fq_input_stream  <- FastqStreamer(paired_input_file, n = chunk_size)
 
@@ -33,7 +37,7 @@ processing_chain <- filter_chain(filter_frequency, trim_bc1, filter_bc1, trim_ha
 
 report_progress <- function(counts) {
     with(as.list(counts), {
-        message(glue("Processed {total_reads} reads, kept {kept_reads} so far..."))    
+        glue("Processed {total_reads} reads, kept {kept_reads} so far...")  |> log_progress()
     }
     )
 }
@@ -51,9 +55,9 @@ summarize_results <- function(counts) {
 }
 
 # Initializes all counts to zero by calling the filtering chain on an empty input stringset
-message("Initializing counts")
+log_progress("Initializing counts")
 counts <- processing_chain(empty_chunk) |> _$counts
-message("Starting streaming")
+log_progress("Starting streaming")
 while ((chunk  <- yield(fq_input_stream))  |> length() > 0L) {
     chunk_ids  <- id(chunk)  |> sub(" .*$", "", x=_)
     chain_results <- chunk |>
@@ -68,4 +72,5 @@ while ((chunk  <- yield(fq_input_stream))  |> length() > 0L) {
 
 close(fq_input_stream)
 
+log_progress("DONE")
 summarize_results(counts)
