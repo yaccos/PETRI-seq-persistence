@@ -70,6 +70,6 @@ rule count_genes:
     log: "logs/{sample}/{sample}_count_genes.log"
     threads: workflow.cores
     params:
-        chunk_size=10000
+        chunk_size=10
     shell:
         "python {script_dir}/count_genes.py 0 {wildcards.sample} {threads} {params.chunk_size} 2> {log}"
