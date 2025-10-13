@@ -70,7 +70,7 @@ cell_UMI_count: Dict[BarcodeGene, Dict[bytes, int]] = {}
 logging.info("Parsing reads")
 iteration_gap = int(1e6)
 read_count = 0
-for read in bamfile.fetch():
+for read in bamfile.fetch(until_eof=True):
     read_name = str(read.query_name)
     if read_name not in barcode_table.index:
          # Read is filtered out
