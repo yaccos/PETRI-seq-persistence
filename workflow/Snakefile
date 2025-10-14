@@ -21,7 +21,6 @@ wildcard_constraints:
 
 
 include: "rules/preprocess.smk"
-include: "rules/overlap.smk"
 include: "rules/sc_pipeline.smk"
 include: "rules/align.smk"
 include: "rules/handle_sam.smk"
@@ -48,7 +47,7 @@ histogram = expand("results/{sample}/{sample}_ReadsPerBC.pdf", sample = sample_n
 def intermediate_files():
     samples = processed_config.keys()
     templates = ["results/{sample}/{sample}_barcode_table.txt", "results/{sample}/{sample}_bc_frame.rds",
-     "results/{sample}/{sample}_frequency_table.txt", "results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq"]
+     "results/{sample}/{sample}_frequency_table.txt", "results/{sample}/{sample}_QF_R2_all_lanes.fastq"]
     files = [expand(template, sample=samples) for template in templates]
     return files
 

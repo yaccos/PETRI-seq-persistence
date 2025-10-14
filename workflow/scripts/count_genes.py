@@ -41,9 +41,8 @@ def get_alignment_status(read: pysam.AlignedSegment):
     return contig, gene
 
 def prepare_barcode_table(file_path: str):
-    barcode_table = pd.read_table(file_path).set_index("read").sort_index()
-    barcode_table["celltag"] = barcode_table[["bc1", "bc2", "bc3"]].agg('_'.join, axis=1)
-    return dict(zip(barcode_table.index, zip(barcode_table["UMI"], barcode_table["celltag"])))
+    barcode_table = pd.read_table(file_path)
+    return dict(zip(barcode_table["read"], zip(barcode_table["UMI"], barcode_table["celltag"])))
 
 def count_umis(umi_dict: Dict[bytes, int]):
     clusterer = umi_tools.UMIClusterer(cluster_method="directional")
@@ -61,7 +60,7 @@ threshold = int(sys.argv[1])
 sample = sys.argv[2]
 n_cores = int(sys.argv[3])
 chunk_size = int(sys.argv[4])
-barcode_table_file = f"results/{sample}/{sample}_barcode_table.txt"
+barcode_table_file = f"results/{sample}/{sample}_selected_barcode_table.txt"
 logging.info("Reading barcode table")
 barcode_table = prepare_barcode_table(barcode_table_file)
 bam_file_path = f"results/{sample}/{sample}_sorted.bam.featureCounts.bam"

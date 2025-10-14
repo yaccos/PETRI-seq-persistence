@@ -14,8 +14,8 @@ get_bwa_index = lambda wildcards: multiext(processed_config[wildcards.sample]["g
 
 # BWA alignment
 rule bwa_align:
-    input:
-        reads="results/{sample}/{sample}_2trim.fastq",
+    input: 
+        reads="results/{sample}/{sample}_QF_R2_all_lanes.fastq",
         genome=lambda wildcards: processed_config[wildcards.sample]["genome"],
         index=get_bwa_index
     output:
@@ -30,7 +30,7 @@ rule bwa_align:
 rule bwa_samse:
     input:
         sai="results/{sample}/{sample}_bwa.sai",
-        reads="results/{sample}/{sample}_2trim.fastq",
+        reads="results/{sample}/{sample}_QF_R2_all_lanes.fastq",
         genome=lambda wildcards: processed_config[wildcards.sample]["genome"],
         index=get_bwa_index
     output:
