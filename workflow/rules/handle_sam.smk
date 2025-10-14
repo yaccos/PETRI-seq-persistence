@@ -1,17 +1,7 @@
-# Removes the XT tag from the sam file because it reportably interfer with featureCounts
-rule remove_xt_tags:
-    input:
-        "results/{sample}/{sample}_bwa.sam",
-    output:
-        temp("results/{sample}/{sample}_no_XT.sam"),
-    shell:
-        'sed "s/XT:/XN:/" {input} > {output}'
-
-
 # Convert to BAM and sort
 rule sam_to_bam_sort:
     input:
-        "results/{sample}/{sample}_no_XT.sam",
+        "results/{sample}/{sample}_bwa.sam",
     output:
         temp("results/{sample}/{sample}_sorted.bam"),
     shell:
