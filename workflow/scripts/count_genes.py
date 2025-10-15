@@ -8,6 +8,12 @@ import multiprocessing
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+summary_logger = logging.getLogger("count_genes.summary")
+if not summary_logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(message)s"))
+    summary_logger.addHandler(_handler)
+summary_logger.propagate = False
 
 @dataclass(frozen=True)
 class BarcodeGene:
@@ -16,15 +22,22 @@ class BarcodeGene:
     contig: str
 
 
-def get_gene(read: pysam.AlignedSegment):
-    num_matches = int(read.get_tag("X0"))
+def is_ambiguous(read: pysam.AlignedSegment) -> bool:
+    if read.mapping_quality == 0:
+        return True
+    if read.has_tag("SA"):
+        return True
+    if read.has_tag("XG") and read.get_tag("XG") != 0:
+        return True
+    return False
 
-    if read.has_tag('XT'):
-        gene = read.get_tag("XT")
-        if ('rRNA' not in gene) and (num_matches > 1):
-            gene = 'ambiguous'
-    else:
-        gene = 'no_feature'
+
+def get_gene(read: pysam.AlignedSegment):
+    if not read.has_tag("XT"):
+        return "no_feature"
+    gene: str = read.get_tag("XT")
+    if "rRNA" not in gene and is_ambiguous(read):
+        return "ambiguous"
     return gene
 
 def get_contig(read: pysam.AlignedSegment):
@@ -32,18 +45,13 @@ def get_contig(read: pysam.AlignedSegment):
     return proposed_contig
 
 def get_alignment_status(read: pysam.AlignedSegment):
-    if not read.is_mapped:
-        contig = "unaligned"
-        gene = "unaligned"
-        return contig, gene
     contig = get_contig(read)
     gene = get_gene(read)
     return contig, gene
 
 def prepare_barcode_table(file_path: str):
-    barcode_table = pd.read_table(file_path).set_index("read").sort_index()
-    barcode_table["celltag"] = barcode_table[["bc1", "bc2", "bc3"]].agg('_'.join, axis=1)
-    return dict(zip(barcode_table.index, zip(barcode_table["UMI"], barcode_table["celltag"])))
+    barcode_table = pd.read_table(file_path)
+    return dict(zip(barcode_table["read"], zip(barcode_table["UMI"], barcode_table["celltag"])))
 
 def count_umis(umi_dict: Dict[bytes, int]):
     clusterer = umi_tools.UMIClusterer(cluster_method="directional")
@@ -61,7 +69,7 @@ threshold = int(sys.argv[1])
 sample = sys.argv[2]
 n_cores = int(sys.argv[3])
 chunk_size = int(sys.argv[4])
-barcode_table_file = f"results/{sample}/{sample}_barcode_table.txt"
+barcode_table_file = f"results/{sample}/{sample}_selected_barcode_table.txt"
 logging.info("Reading barcode table")
 barcode_table = prepare_barcode_table(barcode_table_file)
 bam_file_path = f"results/{sample}/{sample}_sorted.bam.featureCounts.bam"
@@ -69,16 +77,33 @@ bamfile = pysam.AlignmentFile(bam_file_path, "rb")
 cell_UMI_count: Dict[BarcodeGene, Dict[bytes, int]] = {}
 logging.info("Parsing reads")
 iteration_gap = int(1e6)
+alignment_count = 0
 read_count = 0
+selected_count = 0
+aligned_count = 0
+unambiguous_count = 0
+feature_determined = 0
+
 for read in bamfile.fetch(until_eof=True):
+    alignment_count += 1
+    if read.is_secondary or read.is_supplementary:
+        continue
+    read_count += 1
     read_name = str(read.query_name)
     if read_name not in barcode_table:
          # Read is filtered out
          continue
-    read_count += 1
+    selected_count += 1
+
+    if not read.is_mapped:
+        continue
+    aligned_count += 1
     contig, gene = get_alignment_status(read)
-    if contig == 'ambiguous' or gene == "ambiguous":
-         continue
+    if gene == "ambiguous":
+        continue
+    unambiguous_count += 1
+    if gene != "no_feature":
+        feature_determined += 1
     barcode_info = barcode_table[read_name]
     cell_barcode = str(barcode_info[1])
     # UMI-tools expect the UMI to be in the form of bytes
@@ -91,7 +116,7 @@ for read in bamfile.fetch(until_eof=True):
     else:
          cell_UMI_count[read_key][cell_umi] += 1
     if read_count % iteration_gap == 0:
-        logging.info(f"Parsed {read_count} reads")
+        logging.info(f"Parsed {read_count} alignments")
 
 
 logging.info(f"Deduplicating UMIs")
@@ -114,8 +139,24 @@ max_operons = res_frame["count"].max()
 )
 
 logging.info("DONE")
-logging.info(f"Total number of reads: {read_count}")
-logging.info(f"Total number of groups deduplicated: {len(cell_UMI_count)}")
-logging.info(f"Total number of unique UMIs: {n_operons}")
-logging.info(f"Mean number of unique UMIs per operon: {mean_operons}")
-logging.info(f"Max number of unique UMIs per operon: {max_operons}")
+
+def round_percentage(total, part, ndigits=2):
+    if total == 0:
+        # In order to avoid zero division errors
+        total = 1
+    percentage = part / total * 100
+    return round(percentage, ndigits)
+
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+
+summary_logger.info("")
+summary_logger.info(f"Total number of alignments processed: {alignment_count}")
+summary_logger.info(f"of which {read_count} ({round_percentage(alignment_count, read_count)}%) alignments were primary alignments of a read:")
+summary_logger.info(f"of which {selected_count} ({round_percentage(read_count, selected_count)}%) reads were selected based on barcode frequency")
+summary_logger.info(f"of which {aligned_count} ({round_percentage(selected_count, aligned_count)}%) reads aligned to the reference genome")
+summary_logger.info(f"of which {unambiguous_count} ({round_percentage(aligned_count, unambiguous_count)}%) reads aligned unambiguously to the reference genome")
+summary_logger.info(f"of which {feature_determined} ({round_percentage(unambiguous_count, feature_determined)}%) reads did match a genomic feature")
+summary_logger.info(f"Total number of groups deduplicated: {len(cell_UMI_count)}")
+summary_logger.info(f"Total number of unique UMIs: {n_operons}")
+summary_logger.info(f"Mean number of unique UMIs per operon: {mean_operons}")
+summary_logger.info(f"Max number of unique UMIs per operon: {max_operons}")

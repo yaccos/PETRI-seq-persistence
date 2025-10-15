@@ -1,6 +1,6 @@
 rule demultiplex:
     input:
-        "results/{sample}/{sample}_QF_merged_R1_all_lanes.fastq",
+        "results/{sample}/{sample}_QF_R1_all_lanes.fastq",
         f"{barcode_dir}/BC1_5p_anchor_v2.fa",
         f"{barcode_dir}/BC2_anchored.fa",
         f"{barcode_dir}/BC3_anchored.fa",
@@ -35,30 +35,11 @@ rule select_reads:
         "results/{sample}/{sample}_barcode_table.txt"
     output:
         "results/{sample}/{sample}_selected_frequency_table.txt",
-        temp("results/{sample}/{sample}_selected_reads.txt")
+        temp("results/{sample}/{sample}_selected_barcode_table.txt")
     log: 
         "logs/{sample}/select_reads.log"
     params:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"]
     shell:
         "Rscript {script_dir}/select_reads_to_keep.R {wildcards.sample} {params.bc_cutoff} &> {log}"
-    
-
-rule filter_and_trim:
-    input:
-        "results/{sample}/{sample}_barcode_table.txt",
-        "results/{sample}/{sample}_QF_merged_R2_all_lanes.fastq",
-        "results/{sample}/{sample}_bc_frame.rds",
-        "results/{sample}/{sample}_selected_reads.txt"
-    output:
-        trimmed_sequences=temp("results/{sample}/{sample}_2trim.fastq"),
-    params:
-        chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
-    threads:
-        # shortReads' FASTQ parser does have multithreading support, but in practice, this is not utilized
-        # The same goes for the demultiplexer 
-        1
-    log:
-        "logs/{sample}/R2_trim.log"
-    shell:
-        "Rscript {script_dir}/filter_and_trim_R2.R {wildcards.sample} {params.chunk_size} &> {log}"
+        

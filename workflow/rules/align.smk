@@ -14,28 +14,15 @@ get_bwa_index = lambda wildcards: multiext(processed_config[wildcards.sample]["g
 
 # BWA alignment
 rule bwa_align:
-    input:
-        reads="results/{sample}/{sample}_2trim.fastq",
-        genome=lambda wildcards: processed_config[wildcards.sample]["genome"],
-        index=get_bwa_index
-    output:
-        temp("results/{sample}/{sample}_bwa.sai"),
-    log:
-        "logs/{sample}/bwa_aln.log"
-    shell:
-        "bwa aln -n 0.06 {input.genome} {input.reads} > {output} 2> {log}"
-
-
-# Convert SAI to SAM
-rule bwa_samse:
-    input:
-        sai="results/{sample}/{sample}_bwa.sai",
-        reads="results/{sample}/{sample}_2trim.fastq",
+    input: 
+        reads="results/{sample}/{sample}_QF_R2_all_lanes.fastq",
         genome=lambda wildcards: processed_config[wildcards.sample]["genome"],
         index=get_bwa_index
     output:
         temp("results/{sample}/{sample}_bwa.sam"),
     log:
-        "logs/{sample}/bwa_samse.log"
+        "logs/{sample}/bwa_mem.log"
+    threads:
+        1
     shell:
-        "bwa samse -n 14 {input.genome} {input.sai} {input.reads} > {output} 2> {log}"
+        "bwa mem -a -k 19 -Y -t {threads} {input.genome}  {input.reads} > {output} 2> {log}"

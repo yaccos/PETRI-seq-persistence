@@ -1,17 +1,17 @@
-# Removes the XT tag from the sam file because it reportably interfer with featureCounts
-rule remove_xt_tags:
+# Renames the XS tag from the SAM file because it collides with featureCounts
+rule remove_xs_tags:
     input:
         "results/{sample}/{sample}_bwa.sam",
     output:
-        temp("results/{sample}/{sample}_no_XT.sam"),
+        temp("results/{sample}/{sample}_no_XS.sam"),
     shell:
-        'sed "s/XT:/XN:/" {input} > {output}'
+        'sed "s/XS:/XG:/" {input} > {output}'
 
 
 # Convert to BAM and sort
 rule sam_to_bam_sort:
     input:
-        "results/{sample}/{sample}_no_XT.sam",
+        "results/{sample}/{sample}_no_XS.sam",
     output:
         temp("results/{sample}/{sample}_sorted.bam"),
     shell:
@@ -64,7 +64,7 @@ rule count_genes:
     input:
         bam="results/{sample}/{sample}_sorted.bam.featureCounts.bam",
         bai="results/{sample}/{sample}_sorted.bam.featureCounts.bam.bai",
-        barcode_table="results/{sample}/{sample}_barcode_table.txt",
+        barcode_table="results/{sample}/{sample}_selected_barcode_table.txt",
     output:
         "results/{sample}/{sample}_gene_count_matrix.txt"
     log: "logs/{sample}/{sample}_count_genes.log"
