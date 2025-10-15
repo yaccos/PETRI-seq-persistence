@@ -1,7 +1,17 @@
+# Renames the XS tag from the SAM file because it collides with featureCounts
+rule remove_xs_tags:
+    input:
+        "results/{sample}/{sample}_bwa.sam",
+    output:
+        temp("results/{sample}/{sample}_no_XS.sam"),
+    shell:
+        'sed "s/XS:/XG:/" {input} > {output}'
+
+
 # Convert to BAM and sort
 rule sam_to_bam_sort:
     input:
-        "results/{sample}/{sample}_bwa.sam",
+        "results/{sample}/{sample}_no_XS.sam",
     output:
         temp("results/{sample}/{sample}_sorted.bam"),
     shell:
