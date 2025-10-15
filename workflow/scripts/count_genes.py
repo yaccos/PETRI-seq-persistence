@@ -115,7 +115,7 @@ for read in bamfile.fetch(until_eof=True):
          cell_UMI_count[read_key][cell_umi] = 1
     else:
          cell_UMI_count[read_key][cell_umi] += 1
-    if read_count % iteration_gap == 0:
+    if aligned_count % iteration_gap == 0:
         logging.info(f"Parsed {read_count} alignments")
 
 
