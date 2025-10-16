@@ -23,6 +23,6 @@ rule bwa_align:
     log:
         "logs/{sample}/bwa_mem.log"
     threads:
-        1
+        workflow.cores
     shell:
         "bwa mem -a -k 19 -Y -t {threads} {input.genome}  {input.reads} > {output} 2> {log}"
