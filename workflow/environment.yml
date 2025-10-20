@@ -23,6 +23,7 @@ dependencies:
   - bioconductor-shortread
   - r-data.table
   - r-chunked
+  - r-dbplyr
   - sra-tools
   - r-rsqlite
 prefix: /home/japet/miniforge3/envs/petriseq
