@@ -37,7 +37,7 @@ on.exit(dbDisconnect(output_db), add = TRUE)
 
 log_progress("Selecting reads to keep")
 read_table_chunkwise(file = input_table_file, header = TRUE, sep = "\t", chunk_size = chunk_size) |>
-filter(posDemux::row_match(cur_data_all(), selected_freq_table)) |>
+inner_join(selected_freq_table)  |> 
 mutate(celltag = do.call(paste, c(across(all_of(bc_names)), sep = "_")))  |> 
 select(read, UMI, celltag) |> 
 write_chunkwise(dbplyr::src_dbi(output_db), "selected_barcodes")
