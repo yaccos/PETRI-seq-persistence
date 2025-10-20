@@ -89,7 +89,7 @@ barcode_con, fetch_barcode = prepare_barcode_table(barcode_table_file)
 bam_file_path = f"results/{sample}/{sample}_sorted.bam.featureCounts.bam"
 bamfile = pysam.AlignmentFile(bam_file_path, "rb")
 cell_UMI_count: Dict[BarcodeGene, Dict[bytes, int]] = {}
-logging.info("Parsing reads")
+logging.info("Parsing alignments")
 iteration_gap = int(1e6)
 alignment_count = 0
 read_count = 0
@@ -100,6 +100,8 @@ feature_determined = 0
 
 for read in bamfile.fetch(until_eof=True):
     alignment_count += 1
+    if alignment_count % iteration_gap == 0:
+        logging.info(f"Parsed {alignment_count} alignments")
     if read.is_secondary or read.is_supplementary:
         continue
     read_count += 1
@@ -130,8 +132,6 @@ for read in bamfile.fetch(until_eof=True):
          cell_UMI_count[read_key][cell_umi] = 1
     else:
          cell_UMI_count[read_key][cell_umi] += 1
-    if aligned_count % iteration_gap == 0:
-        logging.info(f"Parsed {read_count} alignments")
 
 
 logging.info(f"Deduplicating UMIs")
