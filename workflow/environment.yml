@@ -11,21 +11,18 @@ dependencies:
   - pandas
   - samtools
   - ipython
-  - pear
-  - seqkit
   - snakemake
   - snakefmt
   - radian
   - r-languageserver
   - bioconductor-biostrings
-  - bioconductor-genomicalignments
-  - bioconductor-rtracklayer
   - r-dplyr
   - r-ggplot2
-  - bioconductor-rsamtools
-  - graphviz
   - r-rcpp
   - r-shiny
   - bioconductor-shortread
   - r-data.table
+  - r-chunked
+  - sra-tools
+  - r-rsqlite
 prefix: /home/japet/miniforge3/envs/petriseq
