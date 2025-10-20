@@ -22,12 +22,8 @@ dependencies:
   - r-shiny
   - bioconductor-shortread
   - r-data.table
-<<<<<<< HEAD
-  - sra-tools
-=======
   - r-chunked
   - r-dbplyr
   - sra-tools
   - r-rsqlite
->>>>>>> database
 prefix: /home/japet/miniforge3/envs/petriseq
