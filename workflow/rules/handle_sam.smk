@@ -64,7 +64,7 @@ rule count_genes:
     input:
         bam="results/{sample}/{sample}_sorted.bam.featureCounts.bam",
         bai="results/{sample}/{sample}_sorted.bam.featureCounts.bam.bai",
-        barcode_table="results/{sample}/{sample}_selected_barcode_table.txt",
+        barcode_table="results/{sample}/{sample}_selected_barcode_table.sqlite",
     output:
         "results/{sample}/{sample}_gene_count_matrix.txt"
     log: "logs/{sample}/{sample}_count_genes.log"

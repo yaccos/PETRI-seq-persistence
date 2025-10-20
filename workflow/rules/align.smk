@@ -23,6 +23,7 @@ rule bwa_align:
     log:
         "logs/{sample}/bwa_mem.log"
     threads:
-        workflow.cores
+        # Ensures there is a core left to do demultiplexing
+        max(1, workflow.cores - 1)
     shell:
         "bwa mem -a -k 19 -Y -t {threads} {input.genome}  {input.reads} > {output} 2> {log}"
