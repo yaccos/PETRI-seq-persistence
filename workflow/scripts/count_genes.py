@@ -6,6 +6,8 @@ from typing import Dict, Tuple
 import umi_tools
 import multiprocessing
 import logging
+import sqlite3
+from functools import lru_cache
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 summary_logger = logging.getLogger("count_genes.summary")
@@ -20,6 +22,21 @@ class BarcodeGene:
     barcode: str
     gene: str
     contig: str
+
+
+def prepare_barcode_table(db_path: str):
+    con = sqlite3.connect(db_path)
+    cursor = con.cursor()
+    query = "SELECT UMI, celltag FROM selected_barcodes WHERE read = ?"
+
+    @lru_cache(maxsize=int(1e6))
+    def lookup(read_id: str):
+        row = cursor.execute(query, (read_id,)).fetchone()
+        if row is None:
+            return None
+        return row  # (UMI, celltag)
+
+    return con, lookup
 
 
 def is_ambiguous(read: pysam.AlignedSegment) -> bool:
@@ -49,10 +66,6 @@ def get_alignment_status(read: pysam.AlignedSegment):
     gene = get_gene(read)
     return contig, gene
 
-def prepare_barcode_table(file_path: str):
-    barcode_table = pd.read_table(file_path)
-    return dict(zip(barcode_table["read"], zip(barcode_table["UMI"], barcode_table["celltag"])))
-
 def count_umis(umi_dict: Dict[bytes, int]):
     clusterer = umi_tools.UMIClusterer(cluster_method="directional")
     clustered_umis = clusterer(umi_dict, threshold=1)
@@ -69,13 +82,14 @@ threshold = int(sys.argv[1])
 sample = sys.argv[2]
 n_cores = int(sys.argv[3])
 chunk_size = int(sys.argv[4])
-barcode_table_file = f"results/{sample}/{sample}_selected_barcode_table.txt"
-logging.info("Reading barcode table")
+barcode_table_file = f"results/{sample}/{sample}_selected_barcode_table.sqlite"
+logging.info("Opening barcode database")
 barcode_table = prepare_barcode_table(barcode_table_file)
+barcode_con, fetch_barcode = prepare_barcode_table(barcode_table_file)
 bam_file_path = f"results/{sample}/{sample}_sorted.bam.featureCounts.bam"
 bamfile = pysam.AlignmentFile(bam_file_path, "rb")
 cell_UMI_count: Dict[BarcodeGene, Dict[bytes, int]] = {}
-logging.info("Parsing reads")
+logging.info("Parsing alignments")
 iteration_gap = int(1e6)
 alignment_count = 0
 read_count = 0
@@ -86,11 +100,14 @@ feature_determined = 0
 
 for read in bamfile.fetch(until_eof=True):
     alignment_count += 1
+    if alignment_count % iteration_gap == 0:
+        logging.info(f"Parsed {alignment_count} alignments")
     if read.is_secondary or read.is_supplementary:
         continue
     read_count += 1
     read_name = str(read.query_name)
-    if read_name not in barcode_table:
+    barcode_info = fetch_barcode(read_name)
+    if barcode_info is None:
          # Read is filtered out
          continue
     selected_count += 1
@@ -104,7 +121,7 @@ for read in bamfile.fetch(until_eof=True):
     unambiguous_count += 1
     if gene != "no_feature":
         feature_determined += 1
-    barcode_info = barcode_table[read_name]
+    
     cell_barcode = str(barcode_info[1])
     # UMI-tools expect the UMI to be in the form of bytes
     cell_umi = bytes(barcode_info[0], encoding="ascii")
@@ -115,8 +132,6 @@ for read in bamfile.fetch(until_eof=True):
          cell_UMI_count[read_key][cell_umi] = 1
     else:
          cell_UMI_count[read_key][cell_umi] += 1
-    if aligned_count % iteration_gap == 0:
-        logging.info(f"Parsed {read_count} alignments")
 
 
 logging.info(f"Deduplicating UMIs")

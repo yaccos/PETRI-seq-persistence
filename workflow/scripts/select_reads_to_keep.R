@@ -3,7 +3,8 @@ suppressMessages({
     library(purrr)
     library(glue)
     library(dplyr)
-    library(data.table)
+    library(chunked)
+    library(DBI)
 })
 
 log_progress <- function(msg) {
@@ -19,31 +20,32 @@ sample  <- args[[1L]]
 # bc_cutoff <- 7000L
 
 bc_cutoff  <- as.integer(args[[2L]])
-
+chunk_size  <- as.integer(args[[3L]])
+bc_names  <- glue("bc{1:3}")
 input_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
-
 input_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
-bc_names  <- glue("bc{1:3}")
-
-log_progress("Reading barcode table")
-
-barcode_table  <- fread(file = input_table_file, header = TRUE, sep = "\t")
-
 log_progress("Reading frequency table")
-
 freq_table <- read.table(file = input_frequency_table, header = TRUE, row.names = NULL, sep = "\t")
+selected_freq_table <- freq_table[seq_len(min(bc_cutoff, nrow(freq_table))),]
 
-selected_freq_table <- freq_table[seq_len(bc_cutoff),]
+output_database_name <- glue("results/{sample}/{sample}_selected_barcode_table.sqlite")
+log_progress("Initializing output barcode database stream")
+output_db <- dbConnect(RSQLite::SQLite(), output_database_name)
+on.exit(dbDisconnect(output_db), add = TRUE)
+
 
 log_progress("Selecting reads to keep")
-common_rows <- posDemux::row_match(barcode_table, selected_freq_table)
+read_table_chunkwise(file = input_table_file, header = TRUE, sep = "\t", chunk_size = chunk_size) |>
+inner_join(selected_freq_table)  |> 
+mutate(celltag = do.call(paste, c(across(all_of(bc_names)), sep = "_")))  |> 
+select(read, UMI, celltag) |> 
+write_chunkwise(dbplyr::src_dbi(output_db), "selected_barcodes")
 
-pasted_celltag <- barcode_table[common_rows, do.call(paste, c(.SD, sep = "_")), .SDcols = bc_names]
-selected_barcode_table  <- data.table(read=barcode_table$read[common_rows], UMI=barcode_table$UMI[common_rows],
- celltag=pasted_celltag)
 
-kept_reads <- barcode_table$read[common_rows]
+dbExecute(output_db, "CREATE INDEX idx ON selected_barcodes(read)") |> invisible()
+
+
 
 log_progress("Writing processed frequency table")
 write.table(
@@ -52,12 +54,9 @@ write.table(
     col.names = TRUE
 )
 
-log_progress("Writing processed barcode table")
-data.table::fwrite(x = selected_barcode_table, file = "results/{sample}/{sample}_selected_barcode_table.txt" |> glue(), sep="\t", nThread = 1L)
-
 log_progress("DONE")
 
-n_selected <- sum(common_rows)
-n_read  <- nrow(barcode_table)
-selection_percentage <- n_selected/n_read*100
+n_read  <- freq_table$frequency |> sum()
+n_selected <- selected_freq_table$frequency |> sum()
+selection_percentage <- n_selected / n_read*100
 glue("Selected {n_selected} of {n_read} reads ({round(selection_percentage, 2L)}%) based on barcode frequency")

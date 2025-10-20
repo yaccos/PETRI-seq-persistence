@@ -35,11 +35,12 @@ rule select_reads:
         "results/{sample}/{sample}_barcode_table.txt"
     output:
         "results/{sample}/{sample}_selected_frequency_table.txt",
-        temp("results/{sample}/{sample}_selected_barcode_table.txt")
+        temp("results/{sample}/{sample}_selected_barcode_table.sqlite")
     log: 
         "logs/{sample}/select_reads.log"
     params:
-        bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"]
+        bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"],
+        chunk_size = 1000000
     shell:
-        "Rscript {script_dir}/select_reads_to_keep.R {wildcards.sample} {params.bc_cutoff} &> {log}"
+        "Rscript {script_dir}/select_reads_to_keep.R {wildcards.sample} {params.bc_cutoff} {params.chunk_size} &> {log}"
         
