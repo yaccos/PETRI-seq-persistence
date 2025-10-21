@@ -1,20 +1,15 @@
-def get_input(sample, lane, read):
-    sample_config = processed_config[sample]['fastq']
-    return sample_config[lane][0 if read == "R1" else 1]
-
 rule fastqc:
     input:
-        lambda wildcards: get_input(wildcards.sample, wildcards.lane, wildcards.read),
+        lambda wildcards: get_fastqc_input(wildcards.sample, wildcards.filename),
     output:
         expand(
-            "results/{{sample}}/{{sample}}_{{lane}}_{{read}}_fastqc.{format}",
+            "results/{{sample}}/qc/{{filename}}_fastqc.{format}",
             format= ["html", "zip"]
         ),
     log:
-        "logs/{sample}/{sample}_{lane}_{read}_fastqc.log"
+        "logs/{sample}/qc/{filename}_fastqc.log"
     shell:
-        # Workaround copy-catted from https://github.com/s-andrews/FastQC/issues/9
-        "cutadapt --quiet {input} | fastqc stdin:{wildcards.sample}_{wildcards.lane}_{wildcards.read} -o results/{wildcards.sample} 2> {log}"
+        "fastqc {input} -o results/{wildcards.sample}/qc 2> {log}"
 
 
 rule quality_trim:

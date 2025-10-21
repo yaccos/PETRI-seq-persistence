@@ -1,9 +1,9 @@
 # script_dir = f"{os.path.dirname(os.path.abspath(__file__))}/../scripts"
 import os
+import pathlib
+
 script_dir = "scripts"
 import scripts.handle_config as handle_config
-
-
 configfile: "config.yaml"
 
 # report: "report/workflow.rst"
@@ -25,19 +25,38 @@ include: "rules/sc_pipeline.smk"
 include: "rules/align.smk"
 include: "rules/handle_sam.smk"
 
+def get_input(sample, lane, read):
+    sample_config = processed_config[sample]['fastq']
+    return sample_config[lane][0 if read == "R1" else 1]
+
+def get_path_stem(path: str):
+    # In case we get compressed files, they often have double extensions,
+    # so we remove the final .gz in that case. Otherwise, only the final extension is removed
+    uncompressed_path = path.removesuffix(".gz")
+    stem = pathlib.Path(uncompressed_path).stem
+    return stem
+
 def expand_fastqc(sample):
     sample_config = processed_config[sample]
-    template = "results/{sample}/{sample}_{lane}_R{r}_fastqc.{format}"
-    lanes = processed_config[sample]["fastq"].keys()
+    template = "results/{sample}/qc/{filename}_fastqc.{format}"
+    input_lanes = sample_config["fastq"].values()
+    input_filestems = [get_path_stem(filename) for lane in input_lanes for filename in lane]
     return expand(
     template,
     sample=sample,
-    lane=lanes,
-    r=[1, 2],
+    filename=input_filestems,
     format=["html", "zip"],
     )
 
-fastqc_output = [fastq for sample in sample_names for fastq in expand_fastqc(sample)]
+def get_fastqc_input(sample, filename):
+    sample_config = processed_config[sample]
+    for lane_files in sample_config["fastq"].values():
+        for path in lane_files:
+            if get_path_stem(path) == filename:
+                return path
+    raise ValueError("FastQC input file not found")
+
+fastqc_output = [expand_fastqc(sample) for sample in sample_names]
 gene_matrix_output = expand("results/{sample}/{sample}_gene_count_matrix.txt", sample=sample_names)
 
 
