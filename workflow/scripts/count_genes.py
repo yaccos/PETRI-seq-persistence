@@ -29,7 +29,6 @@ def prepare_barcode_table(db_path: str):
     cursor = con.cursor()
     query = "SELECT UMI, celltag FROM selected_barcodes WHERE read = ?"
 
-    @lru_cache(maxsize=int(1e6))
     def lookup(read_id: str):
         row = cursor.execute(query, (read_id,)).fetchone()
         if row is None:

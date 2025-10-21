@@ -63,6 +63,11 @@ gene_matrix_output = expand("results/{sample}/{sample}_gene_count_matrix.txt", s
 knee_plot = expand("results/{sample}/{sample}_kneePlot.pdf", sample = sample_names)
 histogram = expand("results/{sample}/{sample}_ReadsPerBC.pdf", sample = sample_names)
 
+
+
+# The logic here is that once R1 sequences are used for demultiplexing, they are not longer needed and can be discarded
+# before breaking out of the pipeline to determine the BC cutoff
+# R2 sequences on the other hand are used past the determination of the BC cutoff and must therefore be perserved for this purpose
 def intermediate_files():
     samples = processed_config.keys()
     templates = ["results/{sample}/{sample}_barcode_table.txt", "results/{sample}/{sample}_bc_frame.rds",

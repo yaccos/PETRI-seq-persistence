@@ -25,7 +25,7 @@ rule quality_trim:
     log:
         "logs/{sample}/QF_{lane}.log"
     shell:
-        "cutadapt -q 10,10 --minimum-length 58:14 --max-n 3 --cores={threads} --pair-filter=any -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq} > {log}"
+        "cutadapt -q 10,10 --minimum-length 58:19 --max-n 3 --cores={threads} --pair-filter=any -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq} > {log}"
 
 def get_lane_files_for_merging(prefix, sample, read):
     template = "{prefix}/{sample}_QF_{lane}_{read}.fastq"
@@ -40,11 +40,6 @@ rule merge_R1:
         temp("{prefix}/{sample}_QF_R1_all_lanes.fastq"),
     shell:
         "cat {input} > {output}"
-
-
-# The logic here is that once R1 sequences are used for demultiplexing, they are not longer needed and can be discarded
-# before breaking out of the pipeline to determine the BC cutoff
-# R2 sequences on the other hand are used past the determination of the BC cutoff and must therefore be perserved for this purpose
 
 rule merge_R2:
     input:
