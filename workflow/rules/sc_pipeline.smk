@@ -40,7 +40,7 @@ rule select_reads:
         "logs/{sample}/select_reads.log"
     params:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"],
-        chunk_size = 1000000
+        chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
     shell:
         "Rscript {script_dir}/select_reads_to_keep.R {wildcards.sample} {params.bc_cutoff} {params.chunk_size} &> {log}"
         
