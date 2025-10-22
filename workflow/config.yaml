@@ -20,4 +20,4 @@ feature_tag: Coding_or_RNA
 
 gene_id_attribute: name
 
-streaming_chunk_size: 1e6
+streaming_chunk_size: 200000
