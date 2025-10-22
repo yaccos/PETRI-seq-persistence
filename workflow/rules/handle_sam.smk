@@ -1,21 +1,20 @@
 # Renames the XS tag from the SAM file because it collides with featureCounts
-rule remove_xs_tags:
+rule sam_to_bam:
     input:
         "results/{sample}/{sample}_bwa.sam",
     output:
-        temp("results/{sample}/{sample}_no_XS.sam"),
+        temp("results/{sample}/{sample}_no_XS.bam"),
     shell:
-        'sed "s/XS:/XG:/" {input} > {output}'
-
+        "samtools view -bS --uncompressed --remove-tag XS {input} -o {output}"
 
 # Convert to BAM and sort
 rule sam_to_bam_sort:
     input:
-        "results/{sample}/{sample}_no_XS.sam",
+        "results/{sample}/{sample}_no_XS.bam",
     output:
         temp("results/{sample}/{sample}_sorted.bam"),
     shell:
-        "samtools view -bS {input} | samtools sort - > {output}"
+        "samtools sort -u {input} -o {output}"
 
 
 # Index BAM
@@ -70,6 +69,8 @@ rule count_genes:
     log: "logs/{sample}/{sample}_count_genes.log"
     threads: workflow.cores
     params:
+        # This is not the streaming chunk size and is therefore optimized differently
+        # Only modify this one if you know what you are doing
         chunk_size=10
     shell:
         "python {script_dir}/count_genes.py 0 {wildcards.sample} {threads} {params.chunk_size} 2> {log}"
