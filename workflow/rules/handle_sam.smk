@@ -1,13 +1,23 @@
-# Renames the XS tag from the SAM file because it collides with featureCounts
-rule sam_to_bam:
+# Renames the XS tag to XG it the SAM file because it collides with featureCounts,
+# but is still needed by count_genes.py
+rule remove_xs_tags:
     input:
         "results/{sample}/{sample}_bwa.sam",
     output:
+        temp("results/{sample}/{sample}_no_XS.sam"),
+    shell:
+        'sed "s/XS:/XG:/" {input} > {output}'
+
+# Convert to BAM
+rule sam_to_bam:
+    input:
+        "results/{sample}/{sample}_no_XS.sam",
+    output:
         temp("results/{sample}/{sample}_no_XS.bam"),
     shell:
-        "samtools view -bS --uncompressed --remove-tag XS {input} -o {output}"
+        "samtools view -bS --uncompressed {input} -o {output}"
 
-# Convert to BAM and sort
+# Sort before feature counting
 rule sam_to_bam_sort:
     input:
         "results/{sample}/{sample}_no_XS.bam",
