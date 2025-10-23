@@ -7,7 +7,6 @@ import umi_tools
 import multiprocessing
 import logging
 import sqlite3
-from functools import lru_cache
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 summary_logger = logging.getLogger("count_genes.summary")
@@ -43,7 +42,8 @@ def is_ambiguous(read: pysam.AlignedSegment) -> bool:
         return True
     if read.has_tag("SA"):
         return True
-    if read.has_tag("XG") and read.get_tag("XG") != 0:
+    if read.has_tag("XG") and read.get_tag("XG") >= read.get_tag("AS"):
+        # If there is any other alignment with an equal alignment score, we report it as ambiguous
         return True
     return False
 

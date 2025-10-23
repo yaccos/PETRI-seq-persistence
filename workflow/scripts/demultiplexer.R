@@ -63,7 +63,7 @@ streaming_res <- rlang::exec(streaming_demultiplex, !!! callbacks,
 
 freq_table  <- streaming_res$freq_table
 log_progress("Writing frequency table...")
-data.table::fwrite(x = freq_table, file = output_frequency_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+write.table(x = freq_table, file = output_frequency_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
 log_progress("DONE")
 cat("\n")
 print(streaming_res$summary_res)
