@@ -43,8 +43,9 @@ def is_ambiguous(read: pysam.AlignedSegment) -> bool:
         return True
     if read.has_tag("SA"):
         return True
-    if read.has_tag("XG") and read.get_tag("XG") >= read.get_tag("AS"):
-        # If there is any other alignment with an equal alignment score, we report it as ambiguous
+    if read.has_tag("XG") and read.get_tag("XG") != 0:
+        # If there are multiple possible alignments, this is reported as ambiguous even
+        # if the other alignment may be worse
         return True
     return False
 
