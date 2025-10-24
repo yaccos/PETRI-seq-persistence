@@ -5,7 +5,6 @@ suppressMessages({
     library(glue)
     library(tibble)
     library(ShortRead)
-    library(data.table)
 })
 
 BARCODE_WIDTH <- 7L
