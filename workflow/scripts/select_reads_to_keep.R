@@ -22,11 +22,11 @@ sample  <- args[[1L]]
 bc_cutoff  <- as.integer(args[[2L]])
 chunk_size  <- as.integer(args[[3L]])
 bc_names  <- glue("bc{1:3}")
-input_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
+input_freq_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
 input_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
 log_progress("Reading frequency table")
-freq_table <- read.table(file = input_frequency_table, header = TRUE, row.names = NULL, sep = "\t")
+freq_table <- read.table(file = input_freq_table, header = TRUE, row.names = NULL, sep = "\t")
 selected_freq_table <- freq_table[seq_len(min(bc_cutoff, nrow(freq_table))),]
 
 output_database_name <- glue("results/{sample}/{sample}_selected_barcode_table.sqlite")
