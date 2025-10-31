@@ -32,7 +32,7 @@ output_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
 output_bc_frame  <- glue("results/{sample}/{sample}_bc_frame.rds")
 
-output_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
+output_freq_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
 
 sequence_annotation <- c(UMI = "P", "B", "A", "B", "A", "B", "A")
 
@@ -62,7 +62,7 @@ streaming_res <- rlang::exec(streaming_demultiplex, !!! callbacks,
 
 freq_table  <- streaming_res$freq_table
 log_progress("Writing frequency table...")
-write.table(x = freq_table, file = output_frequency_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+write.table(x = freq_table, file = output_freq_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
 log_progress("DONE")
 cat("\n")
 print(streaming_res$summary_res)
