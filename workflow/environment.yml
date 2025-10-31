@@ -26,4 +26,6 @@ dependencies:
   - r-dbplyr
   - sra-tools
   - r-rsqlite
+  - r-dt
+  - r-yaml
 prefix: /home/japet/miniforge3/envs/petriseq
