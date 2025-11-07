@@ -3,7 +3,7 @@
 
 def process_sample(sample_contents, settings, sample_name):
     settings["prefix"] += sample_contents.get("prefix","")
-    settings["suffix"] += sample_contents.get("suffix","")
+    settings["suffix"] = sample_contents.get("suffix","")
     if "reference_genome" in sample_contents:
         settings["genome"] = settings["prefix"] + sample_contents["reference_genome"] + settings["suffix"]
     elif "genome" not in settings:
@@ -56,14 +56,13 @@ def process_sample(sample_contents, settings, sample_name):
 def config_transform(config):
     settings = {}
     settings["prefix"] = config.get("prefix","")
-    settings["suffix"] = config.get("suffix", "")
 
     if "streaming_chunk_size" in config:
         settings["chunk_size"] = config["streaming_chunk_size"]
     if "reference_genome" in config:
-        settings["genome"] = settings["prefix"] + config["reference_genome"] + settings["suffix"]
+        settings["genome"] = settings["prefix"] + config["reference_genome"]
     if "reference_annotation" in config:
-        settings["annotation"] = settings["prefix"] + config["reference_annotation"] + settings["suffix"]
+        settings["annotation"] = settings["prefix"] + config["reference_annotation"]
 
     for key in ["bc_cutoff", "feature_tag", "gene_id_attribute"]:
         if key in config:

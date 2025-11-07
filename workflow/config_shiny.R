@@ -84,9 +84,6 @@ ui <- fluidPage(
       hr(),
       actionButton("save_cfg", "Save config"),
       hr(),
-      textInput("snake_target", "Snakemake target", value = ""),
-      numericInput("snake_cores", "Cores", value = parallel::detectCores(), min = 1, step = 1),
-      actionButton("run_snake", "Run pipeline")
     ),
     mainPanel(
       DTOutput("samples_table"),
@@ -164,15 +161,6 @@ server <- function(input, output, session) {
     save_config(new_cfg, config_path)
     cfg(new_cfg)
     status_txt("Configuration saved.")
-  })
-
-  observeEvent(input$run_snake, {
-    target <- input$snake_target
-    args <- c("-j", input$snake_cores)
-    if (nzchar(target)) args <- c(args, target)
-    status_txt("Snakemake started...")
-    system2("snakemake", args = args, stdout = "", stderr = "")
-    status_txt("Snakemake finished.")
   })
 
   output$status <- renderText(status_txt())

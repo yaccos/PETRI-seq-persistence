@@ -20,12 +20,14 @@ dependencies:
   - r-ggplot2
   - r-rcpp
   - r-shiny
+  - r-dt
   - bioconductor-shortread
   - r-data.table
   - r-chunked
   - r-dbplyr
   - sra-tools
   - r-rsqlite
-  - r-dt
   - r-yaml
+  - r-shinythemes
+  - r-shinybs
 prefix: /home/japet/miniforge3/envs/petriseq
