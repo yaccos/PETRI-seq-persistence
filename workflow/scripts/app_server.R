@@ -125,6 +125,18 @@ server <- function(input, output, session) {
             list(use_general = FALSE, value = normalized)
         })
 
+        override_types <- list(
+            bc_cutoff = "numeric",
+            chunk_size = "numeric",
+            feature_tag = "text",
+            gene_attribute = "text",
+            suffix = "text",
+            forward_suffix = "text",
+            reverse_suffix = "text",
+            reference_genome = "text",
+            reference_annotation = "text"
+        )
+
         override_params <- c(
             "bc_cutoff",
             "chunk_size",
@@ -525,49 +537,17 @@ server <- function(input, output, session) {
                         }
                     }
 
-                    updateCheckboxInput(session, ids_local$bc_cutoff$specified, value = override_defaults_local$bc_cutoff$use_general)
-                    if (!override_defaults_local$bc_cutoff$use_general && !is.null(override_defaults_local$bc_cutoff$value)) {
-                        updateNumericInput(session, ids_local$bc_cutoff$value, value = override_defaults_local$bc_cutoff$value)
-                    }
-
-                    updateCheckboxInput(session, ids_local$chunk_size$specified, value = override_defaults_local$chunk_size$use_general)
-                    if (!override_defaults_local$chunk_size$use_general && !is.null(override_defaults_local$chunk_size$value)) {
-                        updateNumericInput(session, ids_local$chunk_size$value, value = override_defaults_local$chunk_size$value)
-                    }
-
-                    updateCheckboxInput(session, ids_local$feature_tag$specified, value = override_defaults_local$feature_tag$use_general)
-                    if (!override_defaults_local$feature_tag$use_general && !is.null(override_defaults_local$feature_tag$value)) {
-                        updateTextInput(session, ids_local$feature_tag$value, value = override_defaults_local$feature_tag$value)
-                    }
-
-                    updateCheckboxInput(session, ids_local$gene_attribute$specified, value = override_defaults_local$gene_attribute$use_general)
-                    if (!override_defaults_local$gene_attribute$use_general && !is.null(override_defaults_local$gene_attribute$value)) {
-                        updateTextInput(session, ids_local$gene_attribute$value, value = override_defaults_local$gene_attribute$value)
-                    }
-
-                    updateCheckboxInput(session, ids_local$suffix$specified, value = override_defaults_local$suffix$use_general)
-                    if (!override_defaults_local$suffix$use_general && !is.null(override_defaults_local$suffix$value)) {
-                        updateTextInput(session, ids_local$suffix$value, value = override_defaults_local$suffix$value)
-                    }
-
-                    updateCheckboxInput(session, ids_local$forward_suffix$specified, value = override_defaults_local$forward_suffix$use_general)
-                    if (!override_defaults_local$forward_suffix$use_general && !is.null(override_defaults_local$forward_suffix$value)) {
-                        updateTextInput(session, ids_local$forward_suffix$value, value = override_defaults_local$forward_suffix$value)
-                    }
-
-                    updateCheckboxInput(session, ids_local$reverse_suffix$specified, value = override_defaults_local$reverse_suffix$use_general)
-                    if (!override_defaults_local$reverse_suffix$use_general && !is.null(override_defaults_local$reverse_suffix$value)) {
-                        updateTextInput(session, ids_local$reverse_suffix$value, value = override_defaults_local$reverse_suffix$value)
-                    }
-
-                    updateCheckboxInput(session, ids_local$reference_genome$specified, value = override_defaults_local$reference_genome$use_general)
-                    if (!override_defaults_local$reference_genome$use_general && !is.null(override_defaults_local$reference_genome$value)) {
-                        updateTextInput(session, ids_local$reference_genome$value, value = override_defaults_local$reference_genome$value)
-                    }
-
-                    updateCheckboxInput(session, ids_local$reference_annotation$specified, value = override_defaults_local$reference_annotation$use_general)
-                    if (!override_defaults_local$reference_annotation$use_general && !is.null(override_defaults_local$reference_annotation$value)) {
-                        updateTextInput(session, ids_local$reference_annotation$value, value = override_defaults_local$reference_annotation$value)
+                    for (override_name in names(override_defaults_local)) {
+                        override_state <- override_defaults_local[[override_name]]
+                        override_ids <- ids_local[[override_name]]
+                        updateCheckboxInput(session, override_ids$specified, value = override_state$use_general)
+                        if (!override_state$use_general && !is.null(override_state$value)) {
+                            if (override_types[[override_name]] == "numeric") {
+                                updateNumericInput(session, override_ids$value, value = override_state$value)
+                            } else {
+                                updateTextInput(session, override_ids$value, value = override_state$value)
+                            }
+                        }
                     }
                 }
             }))
@@ -603,6 +583,16 @@ server <- function(input, output, session) {
             value <- trimws(value)
             if (nzchar(value)) value else NULL
         }
+
+        text_override_specs <- list(
+            feature_tag = list(sample_key = "feature_tag", global_id = "feature_tag"),
+            gene_attribute = list(sample_key = "gene_id_attribute", global_id = "gene_id_attribute"),
+            suffix = list(sample_key = "suffix", global_id = "suffix"),
+            forward_suffix = list(sample_key = "forward_suffix", global_id = "forward_suffix"),
+            reverse_suffix = list(sample_key = "reverse_suffix", global_id = "reverse_suffix"),
+            reference_genome = list(sample_key = "reference_genome", global_id = "reference_genome"),
+            reference_annotation = list(sample_key = "reference_annotation", global_id = "reference_annotation")
+        )
 
         for (tab_id in names(entries)) {
             ids <- entries[[tab_id]]
@@ -658,52 +648,15 @@ server <- function(input, output, session) {
                 }
             }
 
-            if (!isTRUE(input[[ids$feature_tag$specified]])) {
-                value <- normalize_string(input_value(ids$feature_tag$value, input$feature_tag))
-                if (!is.null(value)) {
-                    sample_entry$feature_tag <- value
-                }
-            }
-
-            if (!isTRUE(input[[ids$gene_attribute$specified]])) {
-                value <- normalize_string(input_value(ids$gene_attribute$value, input$gene_id_attribute))
-                if (!is.null(value)) {
-                    sample_entry$gene_id_attribute <- value
-                }
-            }
-
-            if (!isTRUE(input[[ids$suffix$specified]])) {
-                value <- normalize_string(input_value(ids$suffix$value, input$suffix))
-                if (!is.null(value)) {
-                    sample_entry$suffix <- value
-                }
-            }
-
-            if (!isTRUE(input[[ids$forward_suffix$specified]])) {
-                value <- normalize_string(input_value(ids$forward_suffix$value, input$forward_suffix))
-                if (!is.null(value)) {
-                    sample_entry$forward_suffix <- value
-                }
-            }
-
-            if (!isTRUE(input[[ids$reverse_suffix$specified]])) {
-                value <- normalize_string(input_value(ids$reverse_suffix$value, input$reverse_suffix))
-                if (!is.null(value)) {
-                    sample_entry$reverse_suffix <- value
-                }
-            }
-
-            if (!isTRUE(input[[ids$reference_genome$specified]])) {
-                value <- normalize_string(input_value(ids$reference_genome$value, input$reference_genome))
-                if (!is.null(value)) {
-                    sample_entry$reference_genome <- value
-                }
-            }
-
-            if (!isTRUE(input[[ids$reference_annotation$specified]])) {
-                value <- normalize_string(input_value(ids$reference_annotation$value, input$reference_annotation))
-                if (!is.null(value)) {
-                    sample_entry$reference_annotation <- value
+            for (field in names(text_override_specs)) {
+                spec <- text_override_specs[[field]]
+                override_ids <- ids[[field]]
+                if (!isTRUE(input[[override_ids$specified]])) {
+                    global_default <- input_value(spec$global_id, "")
+                    value <- normalize_string(input_value(override_ids$value, global_default))
+                    if (!is.null(value)) {
+                        sample_entry[[spec$sample_key]] <- value
+                    }
                 }
             }
 
@@ -765,12 +718,9 @@ server <- function(input, output, session) {
     }
 
     apply_config <- function(cfg) {
-        updateTextInput(session, "prefix", value = cfg$prefix %||% "")
-        updateTextInput(session, "reference_genome", value = cfg$reference_genome %||% "")
-        updateTextInput(session, "reference_annotation", value = cfg$reference_annotation %||% "")
-        updateTextInput(session, "suffix", value = cfg$suffix %||% "")
-        updateTextInput(session, "forward_suffix", value = cfg$forward_suffix %||% "")
-        updateTextInput(session, "reverse_suffix", value = cfg$reverse_suffix %||% "")
+        for (field in c("prefix","reference_genome", "reference_annotation", "suffix", "forward_suffix", "reverse_suffix")){
+            updateTextInput(session, field, value = cfg[[field]] %||% "")
+        }
         chunk_value <- coerce_numeric(cfg$streaming_chunk_size)
         if (!is.null(chunk_value)) {
             updateNumericInput(session, "chunk_size", value = chunk_value)
