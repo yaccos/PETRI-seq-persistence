@@ -227,15 +227,20 @@ server <- function(input, output, session) {
             req(input[[ids$name]])
             input[[ids$name]]
         })
+        outputOptions(output, ids$title, suspendWhenHidden = FALSE)
 
         output[[ids$bc_cutoff$field]] <- renderUI({
-            req(input$bc_cutoff)
             specified <- input[[ids$bc_cutoff$specified]]
             if (is.null(specified)) {
                 specified <- override_defaults$bc_cutoff$use_general
             }
             if (isTRUE(specified)) {
-                glue("Keeping {input$bc_cutoff} barcodes") |> h6()
+                value <- input$bc_cutoff
+                if (!is.null(value) && !is.na(value)) {
+                    glue("Keeping {value} barcodes") |> h6()
+                } else {
+                    h6("No global barcode cutoff configured")
+                }
             } else {
                 numericInput(
                     ids$bc_cutoff$value,
@@ -245,15 +250,20 @@ server <- function(input, output, session) {
                 )
             }
         })
+        outputOptions(output, ids$bc_cutoff$field, suspendWhenHidden = FALSE)
 
         output[[ids$chunk_size$field]] <- renderUI({
-            req(input$chunk_size)
             specified <- input[[ids$chunk_size$specified]]
             if (is.null(specified)) {
                 specified <- override_defaults$chunk_size$use_general
             }
             if (isTRUE(specified)) {
-                glue("Chunk size for streaming: {input$chunk_size} reads") |> h6()
+                value <- input$chunk_size
+                if (!is.null(value) && !is.na(value)) {
+                    glue("Chunk size for streaming: {value} reads") |> h6()
+                } else {
+                    h6("No global streaming chunk size configured")
+                }
             } else {
                 numericInput(
                     ids$chunk_size$value,
@@ -263,6 +273,7 @@ server <- function(input, output, session) {
                 )
             }
         })
+        outputOptions(output, ids$chunk_size$field, suspendWhenHidden = FALSE)
 
         output[[ids$feature_tag$field]] <- renderUI({
             req(input$feature_tag)
@@ -280,6 +291,7 @@ server <- function(input, output, session) {
                 )
             }
         })
+        outputOptions(output, ids$feature_tag$field, suspendWhenHidden = FALSE)
 
         output[[ids$gene_attribute$field]] <- renderUI({
             req(input$gene_id_attribute)
@@ -297,6 +309,7 @@ server <- function(input, output, session) {
                 )
             }
         })
+        outputOptions(output, ids$gene_attribute$field, suspendWhenHidden = FALSE)
 
         output[[ids$suffix$field]] <- renderUI({
             suffix_value <- input_value("suffix")
@@ -314,6 +327,7 @@ server <- function(input, output, session) {
                 )
             }
         })
+        outputOptions(output, ids$suffix$field, suspendWhenHidden = FALSE)
 
         output[[ids$forward_suffix$field]] <- renderUI({
             suffix_value <- input_value("forward_suffix")
@@ -331,6 +345,7 @@ server <- function(input, output, session) {
                 )
             }
         })
+        outputOptions(output, ids$forward_suffix$field, suspendWhenHidden = FALSE)
 
         output[[ids$reverse_suffix$field]] <- renderUI({
             suffix_value <- input_value("reverse_suffix")
@@ -348,6 +363,7 @@ server <- function(input, output, session) {
                 )
             }
         })
+        outputOptions(output, ids$reverse_suffix$field, suspendWhenHidden = FALSE)
 
         reference_genome_path_id <- glue("{ids$reference_genome$value}_path")
 
@@ -356,6 +372,7 @@ server <- function(input, output, session) {
             sample_genome_value <- input_value(ids$reference_genome$value, "")
             glue("Relative path: {prefix()}{sample_genome_value}")
         })
+        outputOptions(output, reference_genome_path_id, suspendWhenHidden = FALSE)
 
         output[[ids$reference_genome$field]] <- renderUI({
             genome_value <- input_value("reference_genome")
@@ -382,6 +399,7 @@ server <- function(input, output, session) {
                 )
             }
         })
+        outputOptions(output, ids$reference_genome$field, suspendWhenHidden = FALSE)
 
         reference_annotation_path_id <- glue("{ids$reference_annotation$value}_path")
 
@@ -390,6 +408,7 @@ server <- function(input, output, session) {
             sample_annotation_value <- input_value(ids$reference_annotation$value, "")
             glue("Relative path: {prefix()}{sample_annotation_value}")
         })
+        outputOptions(output, reference_annotation_path_id, suspendWhenHidden = FALSE)
 
         output[[ids$reference_annotation$field]] <- renderUI({
             annotation_value <- input_value("reference_annotation")
@@ -416,6 +435,7 @@ server <- function(input, output, session) {
                 )
             }
         })
+        outputOptions(output, ids$reference_annotation$field, suspendWhenHidden = FALSE)
 
         output[[ids$lanes]] <- renderUI({
             lane_total <- suppressWarnings(as.integer(input_value(ids$lane_count, lane_count_default)))
@@ -476,6 +496,7 @@ server <- function(input, output, session) {
 
             tagList(lane_ui)
         })
+        outputOptions(output, ids$lanes, suspendWhenHidden = FALSE)
 
         register_sample(ids)
         sample_counter(this_sample_number)
@@ -578,6 +599,10 @@ server <- function(input, output, session) {
 
         samples <- list()
         used_sample_names <- character()
+        normalize_string <- function(value) {
+            value <- trimws(value)
+            if (nzchar(value)) value else NULL
+        }
 
         for (tab_id in names(entries)) {
             ids <- entries[[tab_id]]
@@ -634,31 +659,52 @@ server <- function(input, output, session) {
             }
 
             if (!isTRUE(input[[ids$feature_tag$specified]])) {
-                sample_entry$feature_tag <- trimws(input_value(ids$feature_tag$value, input$feature_tag))
+                value <- normalize_string(input_value(ids$feature_tag$value, input$feature_tag))
+                if (!is.null(value)) {
+                    sample_entry$feature_tag <- value
+                }
             }
 
             if (!isTRUE(input[[ids$gene_attribute$specified]])) {
-                sample_entry$gene_id_attribute <- trimws(input_value(ids$gene_attribute$value, input$gene_id_attribute))
+                value <- normalize_string(input_value(ids$gene_attribute$value, input$gene_id_attribute))
+                if (!is.null(value)) {
+                    sample_entry$gene_id_attribute <- value
+                }
             }
 
             if (!isTRUE(input[[ids$suffix$specified]])) {
-                sample_entry$suffix <- trimws(input_value(ids$suffix$value, input$suffix))
+                value <- normalize_string(input_value(ids$suffix$value, input$suffix))
+                if (!is.null(value)) {
+                    sample_entry$suffix <- value
+                }
             }
 
             if (!isTRUE(input[[ids$forward_suffix$specified]])) {
-                sample_entry$forward_suffix <- trimws(input_value(ids$forward_suffix$value, input$forward_suffix))
+                value <- normalize_string(input_value(ids$forward_suffix$value, input$forward_suffix))
+                if (!is.null(value)) {
+                    sample_entry$forward_suffix <- value
+                }
             }
 
             if (!isTRUE(input[[ids$reverse_suffix$specified]])) {
-                sample_entry$reverse_suffix <- trimws(input_value(ids$reverse_suffix$value, input$reverse_suffix))
+                value <- normalize_string(input_value(ids$reverse_suffix$value, input$reverse_suffix))
+                if (!is.null(value)) {
+                    sample_entry$reverse_suffix <- value
+                }
             }
 
             if (!isTRUE(input[[ids$reference_genome$specified]])) {
-                sample_entry$reference_genome <- trimws(input_value(ids$reference_genome$value, input$reference_genome))
+                value <- normalize_string(input_value(ids$reference_genome$value, input$reference_genome))
+                if (!is.null(value)) {
+                    sample_entry$reference_genome <- value
+                }
             }
 
             if (!isTRUE(input[[ids$reference_annotation$specified]])) {
-                sample_entry$reference_annotation <- trimws(input_value(ids$reference_annotation$value, input$reference_annotation))
+                value <- normalize_string(input_value(ids$reference_annotation$value, input$reference_annotation))
+                if (!is.null(value)) {
+                    sample_entry$reference_annotation <- value
+                }
             }
 
             samples[[sample_name]] <- sample_entry
@@ -668,17 +714,26 @@ server <- function(input, output, session) {
     }
 
     build_config <- function() {
+        normalize_string <- function(value, keep_empty = FALSE) {
+            value <- trimws(value)
+            if (!keep_empty && !nzchar(value)) {
+                NULL
+            } else {
+                value
+            }
+        }
+
         config <- list(
-            prefix = trimws(input_value("prefix", "")),
-            suffix = trimws(input_value("suffix", "")),
-            forward_suffix = trimws(input_value("forward_suffix", "")),
-            reverse_suffix = trimws(input_value("reverse_suffix", "")),
-            reference_genome = trimws(input_value("reference_genome", "")),
-            reference_annotation = trimws(input_value("reference_annotation", "")),
+            prefix = normalize_string(input_value("prefix", ""), keep_empty = TRUE),
+            suffix = normalize_string(input_value("suffix", "")),
+            forward_suffix = normalize_string(input_value("forward_suffix", "")),
+            reverse_suffix = normalize_string(input_value("reverse_suffix", "")),
+            reference_genome = normalize_string(input_value("reference_genome", "")),
+            reference_annotation = normalize_string(input_value("reference_annotation", "")),
             streaming_chunk_size = input$chunk_size,
             bc_cutoff = input$bc_cutoff,
-            feature_tag = trimws(input_value("feature_tag", "")),
-            gene_id_attribute = trimws(input_value("gene_id_attribute", "")),
+            feature_tag = normalize_string(input_value("feature_tag", ""), keep_empty = TRUE),
+            gene_id_attribute = normalize_string(input_value("gene_id_attribute", ""), keep_empty = TRUE),
             samples = collect_samples()
         )
 
@@ -689,7 +744,15 @@ server <- function(input, output, session) {
             config$bc_cutoff <- NULL
         }
 
-        Filter(Negate(is.null), config)
+        Filter(function(x) {
+            if (is.null(x)) {
+                return(FALSE)
+            }
+            if (is.character(x) && length(x) == 1L && !nzchar(x)) {
+                return(FALSE)
+            }
+            TRUE
+        }, config)
     }
 
     remove_all_samples <- function() {
@@ -711,10 +774,14 @@ server <- function(input, output, session) {
         chunk_value <- coerce_numeric(cfg$streaming_chunk_size)
         if (!is.null(chunk_value)) {
             updateNumericInput(session, "chunk_size", value = chunk_value)
+        } else {
+            updateNumericInput(session, "chunk_size", value = NA_real_)
         }
         bc_value <- coerce_numeric(cfg$bc_cutoff)
         if (!is.null(bc_value)) {
             updateNumericInput(session, "bc_cutoff", value = bc_value)
+        } else {
+            updateNumericInput(session, "bc_cutoff", value = NA_real_)
         }
         if (!is.null(cfg$feature_tag)) {
             updateTextInput(session, "feature_tag", value = cfg$feature_tag)
