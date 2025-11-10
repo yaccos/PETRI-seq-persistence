@@ -5,137 +5,121 @@ server <- function(input, output, session) {
         prefix <- reactive(ifelse(input$prefix |> endsWith("/") || input$prefix == "", input$prefix, paste0(input$prefix, "/")))
     output$path_reference_genome <- renderText(glue("Relative path: {prefix()}{input$reference_genome}"))
     output$path_reference_annotation <- renderText(glue("Relative path: {prefix()}{input$reference_annotation}"))
+
     observe(
+        #Creates new tab
         {
-        this_sample_number <- sample_counter() + 1L
-        tab_id <- "sample_{this_sample_number}" |> glue()
-        name_id <- "sample_name_{this_sample_number}" |> glue()
-        title_id <- "sample_title_{this_sample_number}" |> glue()
-        prefix_id <- "sample_prefix_{this_sample_number}" |> glue()
-        suffix_id <- "sample_suffix_{this_sample_number}" |> glue()
-        forward_suffix_id <- "sample_forward_suffix_{this_sample_number}" |> glue()
-        reverse_suffix_id <- "sample_reverse_suffix_{this_sample_number}" |> glue()
-        bc_specified_id <- "sample_bc_specified_{this_sample_number}" |> glue()
-        bc_field_id <- "sample_bc_field_{this_sample_number}" |> glue()
-        bc_cutoff_id <- "sample_bc_cutoff_{this_sample_number}" |> glue()
-        chunk_size_specified_id  <- "sample_chunk_size_specified_{this_sample_number}" |> glue()
-        chunk_size_field_id  <- "sample_chunk_size_field_{this_sample_number}" |> glue()
-        chunk_size_id  <- "sample_chunk_size_{this_sample_number}" |> glue()
-        feature_tag_specified_id <- "sample_feature_tag_spesified_{this_sample_number}" |> glue()
-        feature_tag_field_id <- "sample_feature_tag_field_{this_sample_number}" |> glue()
-        feature_tag_id <- "sample_feature_tag_{this_sample_number}" |> glue()
-        gene_attribute_specified_id <- "sample_gene_attribute_spesified_{this_sample_number}" |> glue()
-        gene_attribute_field_id <- "sample_gene_attribute_field_{this_sample_number}" |> glue()
-        gene_attribute_id <- "sample_gene_attribute_{this_sample_number}" |> glue()
-        appendTab(
-            session = session,
-            inputId = "samples_panel",
-            tabPanel(
-                title = uiOutput(title_id),
-                value = tab_id,
-                    wellPanel(
-                        h4("Path options"),
-                    textInput(name_id,
-                        "Sample name",
-                        value = "Sample {this_sample_number}" |> glue()
-                    ),
-                    textInput(prefix_id,
-                        "Common prefix for all files related to sample",
-                        value = "" |> glue()
-                    ),
-                    textInput(suffix_id,
-                        "Common suffix for all files related to sample",
-                        value = "" |> glue()
-                    ),
-                    textInput(forward_suffix_id,
-                        "Suffix for forward read files",
-                        value = "" |> glue()
-                    ),
-                    textInput(reverse_suffix_id,
-                        "Suffix for reverse read files",
-                        value = "" |> glue()
-                    )
-                ),
-                wellPanel(
-                    h4("Parameter options"),
-                    checkboxInput(bc_specified_id, "Use same barcode cutoff as in the general settings?", value = TRUE),
-                    uiOutput(bc_field_id),
-                    checkboxInput(chunk_size_specified_id, "Use same streaming chunk size as in the general settings?", value = TRUE),
-                    uiOutput(chunk_size_field_id),
-                    checkboxInput(feature_tag_specified_id, "Use same GTF feature tag as in the general settings?", value = TRUE),
-                    uiOutput(feature_tag_field_id),
-                    checkboxInput(gene_attribute_specified_id, "Use same GTF gene attribute tag as in the general settings?", value = TRUE),
-                    uiOutput(gene_attribute_field_id),
+            this_sample_number <- sample_counter() + 1L
 
+            override_params <- c("bc_cutoff", "chunk_size", "feature_tag", "gene_attribute") |> create_self_naming_list()
+            override_elements <- c("specified", "field", "value") |> create_self_naming_list()
 
-                )
-                ,
-                wellPanel(
-                    h4("Reference and annotation input"),
-                    checkboxInput(bc_specified_id, "Use same barcode cutoff as in the general settings?", value = TRUE),
-                    uiOutput(bc_field_id),
-                    checkboxInput(chunk_size_specified_id, "Use same streaming chunk size as in the general settings?", value = TRUE),
-                    uiOutput(chunk_size_field_id),
-                    checkboxInput(feature_tag_specified_id, "Use same GTF feature tag as in the general settings?", value = TRUE),
-                    uiOutput(feature_tag_field_id),
-                    checkboxInput(gene_attribute_specified_id, "Use same GTF gene attribute tag as in the general settings?", value = TRUE),
-                    uiOutput(gene_attribute_field_id),
+            basic_ids <- c("tab", "name", "title", "prefix", "suffix", "forward_suffix", "reverse_suffix") |>
+              create_self_naming_list()  |>
+              map(\(id) "sample_{id}_{this_sample_number}" |> glue())
 
-
-                )
-                
+            override_ids <- map(
+                override_params,
+                \(parameter) map(
+                    override_elements,
+                    \(element) glue("sample_{parameter}_{element}_{this_sample_number}")
                 )
             )
-        output[[title_id]] <- renderText({
-            req(input[[name_id]])
-            input[[name_id]]
-        })
-        output[[bc_field_id]] <- renderUI({
-            req(input$bc_cutoff)
-            if (input[[bc_specified_id]] |> isTRUE()) {
-                "Keeping {input$bc_cutoff} barcodes" |>
-                    glue() |>
-                    h6()
-            } else {
-                numericInput(bc_cutoff_id, "Number of barcode combinations to use:", value = 1e4, step = 1000)
-            }
-        })
-        output[[chunk_size_field_id]] <- renderUI({
-            req(input$chunk_size)
-            if (input[[chunk_size_specified_id]] |> isTRUE()) {
-                "Chunk size for streaming: {input$chunk_size} reads" |>
-                    glue() |>
-                    h6()
-            } else {
-                numericInput(chunk_size_id, "Streaming chunk size:", value = 2e5, step = 1e4)
-            }
-        })
-        output[[feature_tag_field_id]] <- renderUI({
-            req(input$feature_tag)
-            if (input[[feature_tag_specified_id]] |> isTRUE()) {
-                "GTF file feature tag: {input$feature_tag}" |>
-                    glue() |>
-                    h6()
-            } else {
-                textInput(feature_tag_id, "GTF file feature tag", value = "Coding_or_RNA")
-            }
-        })
-        sample_counter(this_sample_number)
-        output[[gene_attribute_field_id]] <- renderUI({
-            req(input$gene_id_attribute)
-            if (input[[gene_attribute_specified_id]] |> isTRUE()) {
-                "GTF file feature tag: {input$gene_id_attribute}" |>
-                    glue() |>
-                    h6()
-            } else {
-                textInput(gene_attribute_id, "GTF file tag for gene identifiers", value = "name")
-            }
-        })
 
+            ids <- c(basic_ids, override_ids)
 
-        sample_counter(this_sample_number)
+            appendTab(
+                session = session,
+                inputId = "samples_panel",
+                tabPanel(
+                    title = uiOutput(ids$title),
+                    value = ids$tab,
+                    wellPanel(
+                        h4("Path options"),
+                        textInput(
+                            inputId = ids$name,
+                            label = "Sample name",
+                            value = glue("Sample {this_sample_number}")
+                        ),
+                        textInput(
+                            inputId = ids$prefix,
+                            label = "Common prefix for all read files in sample",
+                            value = ""
+                        ),
+                        textInput(
+                            inputId = ids$suffix,
+                            label = "Common suffix for all read files in sample",
+                            value = ""
+                        ),
+                        textInput(
+                            inputId = ids$forward_suffix,
+                            label = "Suffix for forward read files",
+                            value = ""
+                        ),
+                        textInput(
+                            inputId = ids$reverse_suffix,
+                            label = "Suffix for reverse read files",
+                            value = ""
+                        )
+                    ),
+                    wellPanel(
+                        h4("Parameter options"),
+                        checkboxInput(ids$bc_cutoff$specified, "Use same barcode cutoff as in the general settings?", value = TRUE),
+                        uiOutput(ids$bc_cutoff$field),
+                        checkboxInput(ids$chunk_size$specified, "Use same streaming chunk size as in the general settings?", value = TRUE),
+                        uiOutput(ids$chunk_size$field),
+                        checkboxInput(ids$feature_tag$specified, "Use same GTF feature tag as in the general settings?", value = TRUE),
+                        uiOutput(ids$feature_tag$field),
+                        checkboxInput(ids$gene_attribute$specified, "Use same GTF gene attribute tag as in the general settings?", value = TRUE),
+                        uiOutput(ids$gene_attribute$field)
+                    )
+                )
+            )
 
-    }) |> bindEvent(input$add_sample)
+            output[[ids$title]] <- renderText({
+                req(input[[ids$name]])
+                input[[ids$name]]
+            })
+
+            output[[ids$bc_cutoff$field]] <- renderUI({
+                req(input$bc_cutoff)
+                if (isTRUE(input[[ids$bc_cutoff$specified]])) {
+                    glue("Keeping {input$bc_cutoff} barcodes") |> h6()
+                } else {
+                    numericInput(ids$bc_cutoff$value, "Number of barcode combinations to use:", value = 1e4, step = 1000)
+                }
+            })
+
+            output[[ids$chunk_size$field]] <- renderUI({
+                req(input$chunk_size)
+                if (isTRUE(input[[ids$chunk_size$specified]])) {
+                    glue("Chunk size for streaming: {input$chunk_size} reads") |> h6()
+                } else {
+                    numericInput(ids$chunk_size$value, "Streaming chunk size:", value = 2e5, step = 1e4)
+                }
+            })
+
+            output[[ids$feature_tag$field]] <- renderUI({
+                req(input$feature_tag)
+                if (isTRUE(input[[ids$feature_tag$specified]])) {
+                    glue("GTF file feature tag: {input$feature_tag}") |> h6()
+                } else {
+                    textInput(ids$feature_tag$value, "GTF file feature tag", value = "Coding_or_RNA")
+                }
+            })
+
+            output[[ids$gene_attribute$field]] <- renderUI({
+                req(input$gene_id_attribute)
+                if (isTRUE(input[[ids$gene_attribute$specified]])) {
+                    glue("GTF file feature tag: {input$gene_id_attribute}") |> h6()
+                } else {
+                    textInput(ids$gene_attribute$value, "GTF file tag for gene identifiers", value = "name")
+                }
+            })
+
+            sample_counter(this_sample_number)
+        }
+    ) |> bindEvent(input$add_sample)
 
     observe({
         req(input$samples_panel)
@@ -146,92 +130,7 @@ server <- function(input, output, session) {
         )
     }) |> bindEvent(input$remove_sample)
 
-    output$patternUI <- renderUI({
-        if (input$patternsearch == T) {
-            updateCheckboxInput(session = session, inputId = "frameshiftsearch", value = F)
-            textInput(inputId = "pattern", label = "Search for the following sequence:", placeholder = "ACTGCTGC")
-        }
-    })
-
-    output$patternReadUI <- renderUI({
-        if (input$patternsearch == T) {
-            selectInput(inputId = "patternRead", label = "Search for the pattern in this read:", choices = paste("Read", 1:input$nfiles), selected = "Read 1")
-        }
-    })
-
-    output$frameshiftUI <- renderUI({
-        if (input$frameshiftsearch == T) {
-            updateCheckboxInput(session = session, inputId = "patternsearch", value = F)
-            textInput(inputId = "pattern", label = "Correct frameshifts using the following sequence:", placeholder = "ACTGCTGC")
-        }
-    })
-
-    output$frameshiftReadUI <- renderUI({
-        if (input$frameshiftsearch == T) {
-            selectInput(inputId = "patternRead", label = "Correct for frameshift with pattern in this read:", choices = paste("Read", 1:input$nfiles), selected = "Read 1")
-        }
-    })
-
-    output$refUI <- renderUI({
-        if (input$NUMadditionalFA > 0) {
-            lapply(1:input$NUMadditionalFA, function(i) {
-                textInput(inputId = paste0("FA_", i), label = paste("Full path to additional sequence", i))
-            })
-        }
-    })
-
-    output$fqUI <- renderUI({
-        if (input$nfiles > 0) {
-            lapply(1:input$nfiles, function(i) {
-                textInput(inputId = paste0("fqpath_", i), label = paste("Full path to fastq file", i, ":"), placeholder = "/path/to/read.fq.gz")
-            })
-        }
-    })
-
-    output$fqBCui <- renderUI({
-        # if(input$nfiles>0){
-        #   lapply(1:input$nfiles, function(i) {
-        #     checkboxGroupInput(inputId = paste0("fqptype_",i),choices = c("cDNA","BC","UMI"),label = paste("Content of read",i),inline = T)
-        #   })
-        # }
-        lapply(1:input$nfiles, function(i) {
-            textInput(inputId = paste0("BC_", i), label = paste("Read", i, "BC", ":"), placeholder = "eg: 1-6")
-        })
-    })
-
-    output$fqUMIui <- renderUI({
-        lapply(1:input$nfiles, function(i) {
-            textInput(inputId = paste0("UMI_", i), label = paste("Read", i, "UMI", ":"), placeholder = "eg: 7-16")
-        })
-    })
-
-    output$fqCDNAui <- renderUI({
-        lapply(1:input$nfiles, function(i) {
-            textInput(inputId = paste0("cDNA_", i), label = paste("Read", i, "cDNA", ":"), placeholder = "eg: 1-50")
-        })
-    })
-
-
-    output$saveUI <- renderUI({
-        textInput(inputId = "savePath", label = "Save YAML file in this path:", value = paste0(input$outDir, "/", input$runID, ".yaml"))
-    })
-
-    output$layoutUI <- renderUI({
-        selectInput(inputId = "layout", label = "cDNA Read Layout", choices = c("SE", "PE"), selected = "SE")
-    })
-
-    # output$basedefui <- renderUI({
-    #   strong(paste("found"))
-    #   lapply(1:input$nfiles, function(i){
-    #     #strong(paste0('Hi, this is output B#', i))
-    #
-    #     #lapply(input$paste0("fqptype_",i), function(j){
-    #       #textInput(inputId = tmp,label = paste("read",i,"input",j))
-    #     #})
-    #   })
-    # })
-
-
+    
     observeEvent(input$SaveYAML, {
         write_yaml(
             x = makeYAML(input),
@@ -459,4 +358,10 @@ server <- function(input, output, session) {
         updateTextInput(session = session, inputId = "pigz_exec", value = ya$pigz_exec)
         updateTextInput(session = session, inputId = "star_exec", value = ya$STAR_exec)
     }
+}
+
+create_self_naming_list <- function(x) {
+    res <- as.list(x)
+    names(res) <- x
+    res
 }

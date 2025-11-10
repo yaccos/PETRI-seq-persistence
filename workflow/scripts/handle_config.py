@@ -5,12 +5,12 @@ def process_sample(sample_contents, settings, sample_name):
     settings["prefix"] += sample_contents.get("prefix","")
     settings["suffix"] = sample_contents.get("suffix","")
     if "reference_genome" in sample_contents:
-        settings["genome"] = settings["prefix"] + sample_contents["reference_genome"] + settings["suffix"]
+        settings["genome"] = sample_contents.get("prefix","") + sample_contents["reference_genome"]
     elif "genome" not in settings:
         raise ValueError(f"No reference genome specified for sample {sample_name}")
     
     if "reference_annotation" in sample_contents:
-        settings["annotation"] = settings["prefix"] + sample_contents["reference_annotation"] + settings["suffix"]
+        settings["annotation"] = sample_contents.get("prefix","") + sample_contents["reference_annotation"]
     elif "annotation" not in settings:
         raise ValueError(f"No reference annotation specified for sample {sample_name}")
     

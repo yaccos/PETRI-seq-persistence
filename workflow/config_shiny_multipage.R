@@ -13,6 +13,7 @@ library(yaml)
 library(shinyBS)
 library(glue)
 library(htmltools)
+library(purrr)
 source("scripts/app_panels.R")
 source("scripts/app_server.R")
 
