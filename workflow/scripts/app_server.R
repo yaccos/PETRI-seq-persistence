@@ -3,6 +3,58 @@ server <- function(input, output, session) {
     sample_counter <- reactiveVal(0L)
     prefix <- reactive(ifelse(input$prefix |> endsWith("/") || input$prefix == "", input$prefix, paste0(input$prefix, "/")))
 
+    sample_registry <- reactiveVal(list())
+
+    register_sample <- function(ids) {
+        entries <- sample_registry()
+        entries[[ids$tab]] <- ids
+        sample_registry(entries)
+    }
+
+    unregister_sample <- function(tab_id) {
+        entries <- sample_registry()
+        if (!is.null(entries[[tab_id]])) {
+            entries[[tab_id]] <- NULL
+            sample_registry(entries)
+        }
+    }
+
+    ensure_unique_name <- function(name, used_names) {
+        candidate <- name
+        suffix <- 2L
+        while (candidate %in% used_names) {
+            candidate <- paste0(name, "_", suffix)
+            suffix <- suffix + 1L
+        }
+        candidate
+    }
+
+    `%||%` <- function(x, y) {
+        if (is.null(x)) y else x
+    }
+
+    run_after_flush <- function(callback) {
+        session$onFlushed(callback, once = TRUE)
+    }
+
+    coerce_numeric <- function(value) {
+        if (is.null(value)) {
+            return(NULL)
+        }
+        if (length(value) == 0) {
+            return(NULL)
+        }
+        if (is.numeric(value) && length(value) == 1L && !is.na(value)) {
+            return(value)
+        }
+        numeric_value <- suppressWarnings(as.numeric(value))
+        if (length(numeric_value) == 1L && !is.na(numeric_value)) {
+            numeric_value
+        } else {
+            NULL
+        }
+    }
+
     input_value <- function(id, default = "") {
         value <- input[[id]]
         if (is.null(value)) {
@@ -14,531 +66,748 @@ server <- function(input, output, session) {
     output$path_reference_genome <- renderText(glue("Relative path: {prefix()}{input$reference_genome}"))
     output$path_reference_annotation <- renderText(glue("Relative path: {prefix()}{input$reference_annotation}"))
 
-    observe(
-        #Creates new tab
-        {
-            this_sample_number <- sample_counter() + 1L
+    add_sample_tab <- function(initial = NULL) {
+        this_sample_number <- sample_counter() + 1L
 
-                        override_params <- c(
-                                "bc_cutoff",
-                                "chunk_size",
-                                "feature_tag",
-                                "gene_attribute",
-                                "suffix",
-                                "forward_suffix",
-                                "reverse_suffix",
-                                "reference_genome",
-                                "reference_annotation"
-                        ) |> create_self_naming_list()
-            override_elements <- c("specified", "field", "value") |> create_self_naming_list()
+        initial <- initial %||% list()
+        loading_from_config <- isTRUE(initial$.__from_config__)
+        initial$.__from_config__ <- NULL
 
-                        basic_ids <- c("tab", "name", "title", "prefix", "lane_count", "lanes") |>
-              create_self_naming_list()  |>
-              map(\(id) "sample_{id}_{this_sample_number}" |> glue())
-
-            override_ids <- map(
-                override_params,
-                \(parameter) map(
-                    override_elements,
-                    \(element) glue("sample_{parameter}_{element}_{this_sample_number}")
-                )
-            )
-
-            ids <- c(basic_ids, override_ids)
-
-            resolve_override <- function(key, general_id, default = "") {
-                if (isTRUE(input[[ids[[key]]$specified]])) {
-                    input_value(general_id, default)
-                } else {
-                    input_value(ids[[key]]$value, default)
-                }
+        normalize_text <- function(value) {
+            if (is.null(value)) {
+                return(NULL)
             }
+            trimws(as.character(value))
+        }
 
-            appendTab(
-                session = session,
-                inputId = "samples_panel",
-                tabPanel(
-                    title = uiOutput(ids$title),
-                    value = ids$tab,
-                    fluidRow(
-                        column(
-                            width = 6,
-                            wellPanel(
-                                h4("Path options"),
-                                textInput(
-                                    inputId = ids$name,
-                                    label = "Sample name",
-                                    value = glue("Sample {this_sample_number}")
-                                ),
-                                textInput(
-                                    inputId = ids$prefix,
-                                    label = "Common prefix for all read files in sample",
-                                    value = ""
-                                ),
-                                checkboxInput(ids$suffix$specified, "Use common suffix from general settings?", value = TRUE),
-                                uiOutput(ids$suffix$field),
-                                checkboxInput(ids$forward_suffix$specified, "Use forward read suffix from general settings?", value = TRUE),
-                                uiOutput(ids$forward_suffix$field),
-                                checkboxInput(ids$reverse_suffix$specified, "Use reverse read suffix from general settings?", value = TRUE),
-                                uiOutput(ids$reverse_suffix$field)
+        sample_label <- normalize_text(initial$name) %||% glue("Sample {this_sample_number}")
+        sample_prefix <- normalize_text(initial$prefix) %||% ""
+
+        lane_defaults <- initial$lanes
+        if (is.null(lane_defaults)) {
+            lane_defaults <- list()
+        }
+        lane_defaults <- as.list(lane_defaults)
+        lane_default_names <- names(lane_defaults)
+        if (is.null(lane_default_names)) {
+            lane_default_names <- character(length(lane_defaults))
+        } else {
+            lane_default_names <- trimws(as.character(lane_default_names))
+        }
+        if (length(lane_defaults) > 0) {
+            lane_defaults <- map(lane_defaults, normalize_text)
+            names(lane_defaults) <- lane_default_names
+        }
+        lane_count_default <- max(1L, length(lane_defaults))
+
+        override_lookup <- list(
+            bc_cutoff = "bc_cutoff",
+            chunk_size = "streaming_chunk_size",
+            feature_tag = "feature_tag",
+            gene_attribute = "gene_id_attribute",
+            suffix = "suffix",
+            forward_suffix = "forward_suffix",
+            reverse_suffix = "reverse_suffix",
+            reference_genome = "reference_genome",
+            reference_annotation = "reference_annotation"
+        )
+
+        override_defaults <- imap(override_lookup, function(source_name, key) {
+            raw_value <- initial[[source_name]]
+            if (is.null(raw_value)) {
+                return(list(use_general = TRUE, value = NULL))
+            }
+            if (key %in% c("bc_cutoff", "chunk_size")) {
+                normalized <- coerce_numeric(raw_value)
+            } else {
+                normalized <- trimws(as.character(raw_value))
+            }
+            list(use_general = FALSE, value = normalized)
+        })
+
+        override_params <- c(
+            "bc_cutoff",
+            "chunk_size",
+            "feature_tag",
+            "gene_attribute",
+            "suffix",
+            "forward_suffix",
+            "reverse_suffix",
+            "reference_genome",
+            "reference_annotation"
+        ) |> create_self_naming_list()
+        override_elements <- c("specified", "field", "value") |> create_self_naming_list()
+
+        basic_ids <- c("tab", "name", "title", "prefix", "lane_count", "lanes") |>
+            create_self_naming_list() |>
+            map(\(id) "sample_{id}_{this_sample_number}" |> glue())
+
+        override_ids <- map(
+            override_params,
+            \(parameter) map(
+                override_elements,
+                \(element) glue("sample_{parameter}_{element}_{this_sample_number}")
+            )
+        )
+
+        ids <- c(basic_ids, override_ids)
+
+        resolve_override <- function(key, general_id, default = "") {
+            use_general <- input[[ids[[key]]$specified]]
+            if (is.null(use_general)) {
+                use_general <- override_defaults[[key]]$use_general
+            }
+            if (isTRUE(use_general)) {
+                input_value(general_id, default)
+            } else {
+                input_value(ids[[key]]$value, default)
+            }
+        }
+
+        appendTab(
+            session = session,
+            inputId = "samples_panel",
+            tabPanel(
+                title = uiOutput(ids$title),
+                value = ids$tab,
+                fluidRow(
+                    column(
+                        width = 6,
+                        wellPanel(
+                            h4("Path options"),
+                            textInput(
+                                inputId = ids$name,
+                                label = "Sample name",
+                                value = sample_label
                             ),
-                            wellPanel(
-                                h4("Parameter options"),
-                                checkboxInput(ids$bc_cutoff$specified, "Use same barcode cutoff as in the general settings?", value = TRUE),
-                                uiOutput(ids$bc_cutoff$field),
-                                checkboxInput(ids$chunk_size$specified, "Use same streaming chunk size as in the general settings?", value = TRUE),
-                                uiOutput(ids$chunk_size$field),
-                                checkboxInput(ids$feature_tag$specified, "Use same GTF feature tag as in the general settings?", value = TRUE),
-                                uiOutput(ids$feature_tag$field),
-                                checkboxInput(ids$gene_attribute$specified, "Use same GTF gene attribute tag as in the general settings?", value = TRUE),
-                                uiOutput(ids$gene_attribute$field)
+                            textInput(
+                                inputId = ids$prefix,
+                                label = "Common prefix for all read files in sample",
+                                value = sample_prefix
                             ),
-                            wellPanel(
-                                h4("Reference files"),
-                                checkboxInput(ids$reference_genome$specified, "Use reference genome from general settings?", value = TRUE),
-                                uiOutput(ids$reference_genome$field),
-                                checkboxInput(ids$reference_annotation$specified, "Use reference annotation from general settings?", value = TRUE),
-                                uiOutput(ids$reference_annotation$field)
-                            )
+                            checkboxInput(ids$suffix$specified, "Use common suffix from general settings?", value = override_defaults$suffix$use_general),
+                            uiOutput(ids$suffix$field),
+                            checkboxInput(ids$forward_suffix$specified, "Use forward read suffix from general settings?", value = override_defaults$forward_suffix$use_general),
+                            uiOutput(ids$forward_suffix$field),
+                            checkboxInput(ids$reverse_suffix$specified, "Use reverse read suffix from general settings?", value = override_defaults$reverse_suffix$use_general),
+                            uiOutput(ids$reverse_suffix$field)
                         ),
-                        column(
-                            width = 6,
-                            wellPanel(
-                                h4("Lane configuration"),
-                                numericInput(ids$lane_count, "Number of lanes", value = 1, min = 1, step = 1),
-                                uiOutput(ids$lanes)
-                            )
+                        wellPanel(
+                            h4("Parameter options"),
+                            checkboxInput(ids$bc_cutoff$specified, "Use same barcode cutoff as in the general settings?", value = override_defaults$bc_cutoff$use_general),
+                            uiOutput(ids$bc_cutoff$field),
+                            checkboxInput(ids$chunk_size$specified, "Use same streaming chunk size as in the general settings?", value = override_defaults$chunk_size$use_general),
+                            uiOutput(ids$chunk_size$field),
+                            checkboxInput(ids$feature_tag$specified, "Use same GTF feature tag as in the general settings?", value = override_defaults$feature_tag$use_general),
+                            uiOutput(ids$feature_tag$field),
+                            checkboxInput(ids$gene_attribute$specified, "Use same GTF gene attribute tag as in the general settings?", value = override_defaults$gene_attribute$use_general),
+                            uiOutput(ids$gene_attribute$field)
+                        ),
+                        wellPanel(
+                            h4("Reference files"),
+                            checkboxInput(ids$reference_genome$specified, "Use reference genome from general settings?", value = override_defaults$reference_genome$use_general),
+                            uiOutput(ids$reference_genome$field),
+                            checkboxInput(ids$reference_annotation$specified, "Use reference annotation from general settings?", value = override_defaults$reference_annotation$use_general),
+                            uiOutput(ids$reference_annotation$field)
+                        )
+                    ),
+                    column(
+                        width = 6,
+                        wellPanel(
+                            h4("Lane configuration"),
+                            numericInput(ids$lane_count, "Number of lanes", value = lane_count_default, min = 1, step = 1),
+                            uiOutput(ids$lanes)
                         )
                     )
                 )
             )
+        )
 
-            output[[ids$title]] <- renderText({
-                req(input[[ids$name]])
-                input[[ids$name]]
-            })
+        output[[ids$title]] <- renderText({
+            req(input[[ids$name]])
+            input[[ids$name]]
+        })
 
-            output[[ids$bc_cutoff$field]] <- renderUI({
-                req(input$bc_cutoff)
-                if (isTRUE(input[[ids$bc_cutoff$specified]])) {
-                    glue("Keeping {input$bc_cutoff} barcodes") |> h6()
+        output[[ids$bc_cutoff$field]] <- renderUI({
+            req(input$bc_cutoff)
+            specified <- input[[ids$bc_cutoff$specified]]
+            if (is.null(specified)) {
+                specified <- override_defaults$bc_cutoff$use_general
+            }
+            if (isTRUE(specified)) {
+                glue("Keeping {input$bc_cutoff} barcodes") |> h6()
+            } else {
+                numericInput(
+                    ids$bc_cutoff$value,
+                    "Number of barcode combinations to use:",
+                    value = override_defaults$bc_cutoff$value %||% input$bc_cutoff,
+                    step = 1000
+                )
+            }
+        })
+
+        output[[ids$chunk_size$field]] <- renderUI({
+            req(input$chunk_size)
+            specified <- input[[ids$chunk_size$specified]]
+            if (is.null(specified)) {
+                specified <- override_defaults$chunk_size$use_general
+            }
+            if (isTRUE(specified)) {
+                glue("Chunk size for streaming: {input$chunk_size} reads") |> h6()
+            } else {
+                numericInput(
+                    ids$chunk_size$value,
+                    "Streaming chunk size:",
+                    value = override_defaults$chunk_size$value %||% input$chunk_size,
+                    step = 1e4
+                )
+            }
+        })
+
+        output[[ids$feature_tag$field]] <- renderUI({
+            req(input$feature_tag)
+            specified <- input[[ids$feature_tag$specified]]
+            if (is.null(specified)) {
+                specified <- override_defaults$feature_tag$use_general
+            }
+            if (isTRUE(specified)) {
+                glue("GTF file feature tag: {input$feature_tag}") |> h6()
+            } else {
+                textInput(
+                    ids$feature_tag$value,
+                    "GTF file feature tag",
+                    value = override_defaults$feature_tag$value %||% input_value("feature_tag", "")
+                )
+            }
+        })
+
+        output[[ids$gene_attribute$field]] <- renderUI({
+            req(input$gene_id_attribute)
+            specified <- input[[ids$gene_attribute$specified]]
+            if (is.null(specified)) {
+                specified <- override_defaults$gene_attribute$use_general
+            }
+            if (isTRUE(specified)) {
+                glue("GTF file feature tag: {input$gene_id_attribute}") |> h6()
+            } else {
+                textInput(
+                    ids$gene_attribute$value,
+                    "GTF file tag for gene identifiers",
+                    value = override_defaults$gene_attribute$value %||% input_value("gene_id_attribute", "")
+                )
+            }
+        })
+
+        output[[ids$suffix$field]] <- renderUI({
+            suffix_value <- input_value("suffix")
+            specified <- input[[ids$suffix$specified]]
+            if (is.null(specified)) {
+                specified <- override_defaults$suffix$use_general
+            }
+            if (isTRUE(specified)) {
+                glue("Common suffix: {suffix_value}") |> h6()
+            } else {
+                textInput(
+                    ids$suffix$value,
+                    "Common suffix for all read files",
+                    value = override_defaults$suffix$value %||% suffix_value
+                )
+            }
+        })
+
+        output[[ids$forward_suffix$field]] <- renderUI({
+            suffix_value <- input_value("forward_suffix")
+            specified <- input[[ids$forward_suffix$specified]]
+            if (is.null(specified)) {
+                specified <- override_defaults$forward_suffix$use_general
+            }
+            if (isTRUE(specified)) {
+                glue("Forward read suffix: {suffix_value}") |> h6()
+            } else {
+                textInput(
+                    ids$forward_suffix$value,
+                    "Suffix for forward read files",
+                    value = override_defaults$forward_suffix$value %||% suffix_value
+                )
+            }
+        })
+
+        output[[ids$reverse_suffix$field]] <- renderUI({
+            suffix_value <- input_value("reverse_suffix")
+            specified <- input[[ids$reverse_suffix$specified]]
+            if (is.null(specified)) {
+                specified <- override_defaults$reverse_suffix$use_general
+            }
+            if (isTRUE(specified)) {
+                glue("Reverse read suffix: {suffix_value}") |> h6()
+            } else {
+                textInput(
+                    ids$reverse_suffix$value,
+                    "Suffix for reverse read files",
+                    value = override_defaults$reverse_suffix$value %||% suffix_value
+                )
+            }
+        })
+
+        reference_genome_path_id <- glue("{ids$reference_genome$value}_path")
+
+        output[[reference_genome_path_id]] <- renderText({
+            req(!isTRUE(input[[ids$reference_genome$specified]]))
+            sample_genome_value <- input_value(ids$reference_genome$value, "")
+            glue("Relative path: {prefix()}{sample_genome_value}")
+        })
+
+        output[[ids$reference_genome$field]] <- renderUI({
+            genome_value <- input_value("reference_genome")
+            specified <- input[[ids$reference_genome$specified]]
+            if (is.null(specified)) {
+                specified <- override_defaults$reference_genome$use_general
+            }
+            if (isTRUE(specified)) {
+                if (nzchar(genome_value)) {
+                    glue("Reference genome: {prefix()}{genome_value}") |> h6()
                 } else {
-                    numericInput(ids$bc_cutoff$value, "Number of barcode combinations to use:", value = 1e4, step = 1000)
+                    h6("Reference genome not set")
                 }
-            })
-
-            output[[ids$chunk_size$field]] <- renderUI({
-                req(input$chunk_size)
-                if (isTRUE(input[[ids$chunk_size$specified]])) {
-                    glue("Chunk size for streaming: {input$chunk_size} reads") |> h6()
+            } else {
+                existing_value <- isolate(input[[ids$reference_genome$value]])
+                sample_genome_value <- if (is.null(existing_value)) {
+                    override_defaults$reference_genome$value %||% genome_value
                 } else {
-                    numericInput(ids$chunk_size$value, "Streaming chunk size:", value = 2e5, step = 1e4)
+                    existing_value
                 }
-            })
+                tagList(
+                    textInput(ids$reference_genome$value, "Reference genome for this sample", value = sample_genome_value),
+                    h6(textOutput(reference_genome_path_id))
+                )
+            }
+        })
 
-            output[[ids$feature_tag$field]] <- renderUI({
-                req(input$feature_tag)
-                if (isTRUE(input[[ids$feature_tag$specified]])) {
-                    glue("GTF file feature tag: {input$feature_tag}") |> h6()
+        reference_annotation_path_id <- glue("{ids$reference_annotation$value}_path")
+
+        output[[reference_annotation_path_id]] <- renderText({
+            req(!isTRUE(input[[ids$reference_annotation$specified]]))
+            sample_annotation_value <- input_value(ids$reference_annotation$value, "")
+            glue("Relative path: {prefix()}{sample_annotation_value}")
+        })
+
+        output[[ids$reference_annotation$field]] <- renderUI({
+            annotation_value <- input_value("reference_annotation")
+            specified <- input[[ids$reference_annotation$specified]]
+            if (is.null(specified)) {
+                specified <- override_defaults$reference_annotation$use_general
+            }
+            if (isTRUE(specified)) {
+                if (nzchar(annotation_value)) {
+                    glue("Reference annotation: {prefix()}{annotation_value}") |> h6()
                 } else {
-                    textInput(ids$feature_tag$value, "GTF file feature tag", value = "Coding_or_RNA")
+                    h6("Reference annotation not set")
                 }
-            })
-
-            output[[ids$gene_attribute$field]] <- renderUI({
-                req(input$gene_id_attribute)
-                if (isTRUE(input[[ids$gene_attribute$specified]])) {
-                    glue("GTF file feature tag: {input$gene_id_attribute}") |> h6()
+            } else {
+                existing_value <- isolate(input[[ids$reference_annotation$value]])
+                sample_annotation_value <- if (is.null(existing_value)) {
+                    override_defaults$reference_annotation$value %||% annotation_value
                 } else {
-                    textInput(ids$gene_attribute$value, "GTF file tag for gene identifiers", value = "name")
+                    existing_value
                 }
-            })
+                tagList(
+                    textInput(ids$reference_annotation$value, "Reference annotation for this sample", value = sample_annotation_value),
+                    h6(textOutput(reference_annotation_path_id))
+                )
+            }
+        })
 
-            output[[ids$suffix$field]] <- renderUI({
-                suffix_value <- input_value("suffix")
-                if (isTRUE(input[[ids$suffix$specified]])) {
-                    glue("Common suffix: {suffix_value}") |> h6()
-                } else {
-                    textInput(ids$suffix$value, "Common suffix for all read files", value = suffix_value)
+        output[[ids$lanes]] <- renderUI({
+            lane_total <- suppressWarnings(as.integer(input_value(ids$lane_count, lane_count_default)))
+            if (is.na(lane_total) || lane_total < 1) {
+                return(h6("No lanes configured"))
+            }
+
+            lane_ui <- lapply(seq_len(lane_total), function(idx) {
+                lane_name_id <- glue("{ids$tab}_lane_name_{idx}")
+                lane_identifier_id <- glue("{ids$tab}_lane_identifier_{idx}")
+                forward_path_id <- glue("{lane_identifier_id}_forward_path")
+                reverse_path_id <- glue("{lane_identifier_id}_reverse_path")
+                lane_name_value <- isolate(input[[lane_name_id]])
+                if (is.null(lane_name_value)) {
+                    lane_name_value <- lane_default_names[[idx]] %||% glue("L{idx}")
                 }
-            })
-
-            output[[ids$forward_suffix$field]] <- renderUI({
-                suffix_value <- input_value("forward_suffix")
-                if (isTRUE(input[[ids$forward_suffix$specified]])) {
-                    glue("Forward read suffix: {suffix_value}") |> h6()
-                } else {
-                    textInput(ids$forward_suffix$value, "Suffix for forward read files", value = suffix_value)
-                }
-            })
-
-            output[[ids$reverse_suffix$field]] <- renderUI({
-                suffix_value <- input_value("reverse_suffix")
-                if (isTRUE(input[[ids$reverse_suffix$specified]])) {
-                    glue("Reverse read suffix: {suffix_value}") |> h6()
-                } else {
-                    textInput(ids$reverse_suffix$value, "Suffix for reverse read files", value = suffix_value)
-                }
-            })
-
-            reference_genome_path_id <- glue("{ids$reference_genome$value}_path")
-
-            output[[reference_genome_path_id]] <- renderText({
-                req(!isTRUE(input[[ids$reference_genome$specified]]))
-                sample_prefix_value <- input_value(ids$prefix, "")
-                sample_genome_value <- input_value(ids$reference_genome$value, "")
-                glue("Relative path: {prefix()}{sample_prefix_value}{sample_genome_value}")
-            })
-
-            output[[ids$reference_genome$field]] <- renderUI({
-                genome_value <- input_value("reference_genome")
-                if (isTRUE(input[[ids$reference_genome$specified]])) {
-                    if (nzchar(genome_value)) {
-                        glue("Reference genome: {prefix()}{genome_value}") |> h6()
-                    } else {
-                        h6("Reference genome not set")
-                    }
-                } else {
-                    existing_value <- isolate(input[[ids$reference_genome$value]])
-                    sample_genome_value <- if (is.null(existing_value)) genome_value else existing_value
-                    tagList(
-                        textInput(ids$reference_genome$value, "Reference genome for this sample", value = sample_genome_value),
-                        h6(textOutput(reference_genome_path_id))
-                    )
-                }
-            })
-
-            reference_annotation_path_id <- glue("{ids$reference_annotation$value}_path")
-
-            output[[reference_annotation_path_id]] <- renderText({
-                req(!isTRUE(input[[ids$reference_annotation$specified]]))
-                sample_prefix_value <- input_value(ids$prefix, "")
-                sample_annotation_value <- input_value(ids$reference_annotation$value, "")
-                glue("Relative path: {prefix()}{sample_prefix_value}{sample_annotation_value}")
-            })
-
-            output[[ids$reference_annotation$field]] <- renderUI({
-                annotation_value <- input_value("reference_annotation")
-                if (isTRUE(input[[ids$reference_annotation$specified]])) {
-                    if (nzchar(annotation_value)) {
-                        glue("Reference annotation: {prefix()}{annotation_value}") |> h6()
-                    } else {
-                        h6("Reference annotation not set")
-                    }
-                } else {
-                    existing_value <- isolate(input[[ids$reference_annotation$value]])
-                    sample_annotation_value <- if (is.null(existing_value)) annotation_value else existing_value
-                    tagList(
-                        textInput(ids$reference_annotation$value, "Reference annotation for this sample", value = sample_annotation_value),
-                        h6(textOutput(reference_annotation_path_id))
-                    )
-                }
-            })
-
-            output[[ids$lanes]] <- renderUI({
-                lane_total <- suppressWarnings(as.integer(input_value(ids$lane_count, 0)))
-                if (is.na(lane_total) || lane_total < 1) {
-                    return(h6("No lanes configured"))
+                lane_identifier_value <- isolate(input[[lane_identifier_id]])
+                if (is.null(lane_identifier_value)) {
+                    lane_identifier_value <- lane_defaults[[idx]] %||% ""
                 }
 
-                lane_ui <- lapply(seq_len(lane_total), function(idx) {
-                    lane_name_id <- glue("{ids$tab}_lane_name_{idx}")
-                    lane_identifier_id <- glue("{ids$tab}_lane_identifier_{idx}")
-                    forward_path_id <- glue("{lane_identifier_id}_forward_path")
-                    reverse_path_id <- glue("{lane_identifier_id}_reverse_path")
-                    lane_name_value <- isolate(input[[lane_name_id]])
-                    if (is.null(lane_name_value)) {
-                        lane_name_value <- glue("L{idx}")
-                    }
-                    lane_identifier_value <- isolate(input[[lane_identifier_id]])
-                    if (is.null(lane_identifier_value)) {
-                        lane_identifier_value <- ""
-                    }
+                local({
+                    lane_identifier_id_local <- lane_identifier_id
+                    forward_path_id_local <- forward_path_id
+                    reverse_path_id_local <- reverse_path_id
 
-                    local({
-                        lane_identifier_id_local <- lane_identifier_id
-                        forward_path_id_local <- forward_path_id
-                        reverse_path_id_local <- reverse_path_id
-
-                        output[[forward_path_id_local]] <- renderText({
-                            lane_identifier_current <- input[[lane_identifier_id_local]]
-                            if (is.null(lane_identifier_current)) {
-                                lane_identifier_current <- ""
-                            }
-                            suffix_value <- resolve_override("suffix", "suffix")
-                            forward_suffix_value <- resolve_override("forward_suffix", "forward_suffix")
-                            sample_prefix_value <- input_value(ids$prefix, "")
-                            paste0(prefix(), sample_prefix_value, lane_identifier_current, forward_suffix_value, suffix_value)
-                        })
-
-                        output[[reverse_path_id_local]] <- renderText({
-                            lane_identifier_current <- input[[lane_identifier_id_local]]
-                            if (is.null(lane_identifier_current)) {
-                                lane_identifier_current <- ""
-                            }
-                            suffix_value <- resolve_override("suffix", "suffix")
-                            reverse_suffix_value <- resolve_override("reverse_suffix", "reverse_suffix")
-                            sample_prefix_value <- input_value(ids$prefix, "")
-                            paste0(prefix(), sample_prefix_value, lane_identifier_current, reverse_suffix_value, suffix_value)
-                        })
+                    output[[forward_path_id_local]] <- renderText({
+                        lane_identifier_current <- input[[lane_identifier_id_local]]
+                        if (is.null(lane_identifier_current)) {
+                            lane_identifier_current <- ""
+                        }
+                        suffix_value <- resolve_override("suffix", "suffix")
+                        forward_suffix_value <- resolve_override("forward_suffix", "forward_suffix")
+                        sample_prefix_value <- input_value(ids$prefix, "")
+                        paste0(prefix(), sample_prefix_value, lane_identifier_current, forward_suffix_value, suffix_value)
                     })
 
-                    div(
-                        class = "lane-entry",
-                        textInput(lane_name_id, glue("Lane {idx} name"), value = lane_name_value),
-                        textInput(lane_identifier_id, glue("Lane {idx} identifier"), value = lane_identifier_value),
-                        tags$p("Forward read path ", textOutput(forward_path_id, inline = TRUE, container = tags$code)),
-                        tags$p("Reverse read path ", textOutput(reverse_path_id, inline = TRUE, container = tags$code))
-                    )
+                    output[[reverse_path_id_local]] <- renderText({
+                        lane_identifier_current <- input[[lane_identifier_id_local]]
+                        if (is.null(lane_identifier_current)) {
+                            lane_identifier_current <- ""
+                        }
+                        suffix_value <- resolve_override("suffix", "suffix")
+                        reverse_suffix_value <- resolve_override("reverse_suffix", "reverse_suffix")
+                        sample_prefix_value <- input_value(ids$prefix, "")
+                        paste0(prefix(), sample_prefix_value, lane_identifier_current, reverse_suffix_value, suffix_value)
+                    })
                 })
 
-                tagList(lane_ui)
+                div(
+                    class = "lane-entry",
+                    textInput(lane_name_id, glue("Lane {idx} name"), value = lane_name_value),
+                    textInput(lane_identifier_id, glue("Lane {idx} identifier"), value = lane_identifier_value),
+                    tags$p("Forward read path ", textOutput(forward_path_id, inline = TRUE, container = tags$code)),
+                    tags$p("Reverse read path ", textOutput(reverse_path_id, inline = TRUE, container = tags$code))
+                )
             })
 
-            sample_counter(this_sample_number)
+            tagList(lane_ui)
+        })
+
+        register_sample(ids)
+        sample_counter(this_sample_number)
+
+        if (loading_from_config) {
+            run_after_flush(local({
+                ids_local <- ids
+                lane_defaults_local <- lane_defaults
+                lane_default_names_local <- lane_default_names
+                lane_count_local <- lane_count_default
+                override_defaults_local <- override_defaults
+                sample_label_local <- sample_label
+                sample_prefix_local <- sample_prefix
+                function() {
+                    updateTextInput(session, ids_local$name, value = sample_label_local)
+                    updateTextInput(session, ids_local$prefix, value = sample_prefix_local)
+                    updateNumericInput(session, ids_local$lane_count, value = lane_count_local)
+                    if (lane_count_local > 0) {
+                        for (idx in seq_len(lane_count_local)) {
+                            lane_name_id <- glue("{ids_local$tab}_lane_name_{idx}")
+                            lane_identifier_id <- glue("{ids_local$tab}_lane_identifier_{idx}")
+                            lane_name_value <- lane_default_names_local[[idx]] %||% glue("L{idx}")
+                            lane_identifier_value <- lane_defaults_local[[idx]] %||% ""
+                            updateTextInput(session, lane_name_id, value = lane_name_value)
+                            updateTextInput(session, lane_identifier_id, value = lane_identifier_value)
+                        }
+                    }
+
+                    updateCheckboxInput(session, ids_local$bc_cutoff$specified, value = override_defaults_local$bc_cutoff$use_general)
+                    if (!override_defaults_local$bc_cutoff$use_general && !is.null(override_defaults_local$bc_cutoff$value)) {
+                        updateNumericInput(session, ids_local$bc_cutoff$value, value = override_defaults_local$bc_cutoff$value)
+                    }
+
+                    updateCheckboxInput(session, ids_local$chunk_size$specified, value = override_defaults_local$chunk_size$use_general)
+                    if (!override_defaults_local$chunk_size$use_general && !is.null(override_defaults_local$chunk_size$value)) {
+                        updateNumericInput(session, ids_local$chunk_size$value, value = override_defaults_local$chunk_size$value)
+                    }
+
+                    updateCheckboxInput(session, ids_local$feature_tag$specified, value = override_defaults_local$feature_tag$use_general)
+                    if (!override_defaults_local$feature_tag$use_general && !is.null(override_defaults_local$feature_tag$value)) {
+                        updateTextInput(session, ids_local$feature_tag$value, value = override_defaults_local$feature_tag$value)
+                    }
+
+                    updateCheckboxInput(session, ids_local$gene_attribute$specified, value = override_defaults_local$gene_attribute$use_general)
+                    if (!override_defaults_local$gene_attribute$use_general && !is.null(override_defaults_local$gene_attribute$value)) {
+                        updateTextInput(session, ids_local$gene_attribute$value, value = override_defaults_local$gene_attribute$value)
+                    }
+
+                    updateCheckboxInput(session, ids_local$suffix$specified, value = override_defaults_local$suffix$use_general)
+                    if (!override_defaults_local$suffix$use_general && !is.null(override_defaults_local$suffix$value)) {
+                        updateTextInput(session, ids_local$suffix$value, value = override_defaults_local$suffix$value)
+                    }
+
+                    updateCheckboxInput(session, ids_local$forward_suffix$specified, value = override_defaults_local$forward_suffix$use_general)
+                    if (!override_defaults_local$forward_suffix$use_general && !is.null(override_defaults_local$forward_suffix$value)) {
+                        updateTextInput(session, ids_local$forward_suffix$value, value = override_defaults_local$forward_suffix$value)
+                    }
+
+                    updateCheckboxInput(session, ids_local$reverse_suffix$specified, value = override_defaults_local$reverse_suffix$use_general)
+                    if (!override_defaults_local$reverse_suffix$use_general && !is.null(override_defaults_local$reverse_suffix$value)) {
+                        updateTextInput(session, ids_local$reverse_suffix$value, value = override_defaults_local$reverse_suffix$value)
+                    }
+
+                    updateCheckboxInput(session, ids_local$reference_genome$specified, value = override_defaults_local$reference_genome$use_general)
+                    if (!override_defaults_local$reference_genome$use_general && !is.null(override_defaults_local$reference_genome$value)) {
+                        updateTextInput(session, ids_local$reference_genome$value, value = override_defaults_local$reference_genome$value)
+                    }
+
+                    updateCheckboxInput(session, ids_local$reference_annotation$specified, value = override_defaults_local$reference_annotation$use_general)
+                    if (!override_defaults_local$reference_annotation$use_general && !is.null(override_defaults_local$reference_annotation$value)) {
+                        updateTextInput(session, ids_local$reference_annotation$value, value = override_defaults_local$reference_annotation$value)
+                    }
+                }
+            }))
         }
-    ) |> bindEvent(input$add_sample)
+
+        invisible(ids)
+    }
+
+    observe({
+        add_sample_tab()
+    }) |> bindEvent(input$add_sample)
 
     observe({
         req(input$samples_panel)
+        target_tab <- input$samples_panel
         removeTab(
             session = session,
             inputId = "samples_panel",
-            target = input$samples_panel
+            target = target_tab
         )
+        unregister_sample(target_tab)
     }) |> bindEvent(input$remove_sample)
+
+    collect_samples <- function() {
+        entries <- sample_registry()
+        if (length(entries) == 0) {
+            return(list())
+        }
+
+        samples <- list()
+        used_sample_names <- character()
+
+        for (tab_id in names(entries)) {
+            ids <- entries[[tab_id]]
+            raw_name <- trimws(input_value(ids$name, tab_id))
+            if (!nzchar(raw_name)) {
+                raw_name <- tab_id
+            }
+            sample_name <- ensure_unique_name(raw_name, used_sample_names)
+            used_sample_names <- c(used_sample_names, sample_name)
+
+            sample_prefix <- trimws(input_value(ids$prefix, ""))
+
+            lane_count <- suppressWarnings(as.integer(input_value(ids$lane_count, 0)))
+            lane_map <- list()
+            lane_names_used <- character()
+            if (!is.na(lane_count) && lane_count > 0) {
+                for (idx in seq_len(lane_count)) {
+                    lane_name_id <- glue("{ids$tab}_lane_name_{idx}")
+                    lane_identifier_id <- glue("{ids$tab}_lane_identifier_{idx}")
+                    lane_name <- trimws(input_value(lane_name_id, glue("L{idx}")))
+                    if (!nzchar(lane_name)) {
+                        lane_name <- glue("L{idx}")
+                    }
+                    lane_name <- ensure_unique_name(lane_name, lane_names_used)
+                    lane_names_used <- c(lane_names_used, lane_name)
+                    lane_identifier <- trimws(input_value(lane_identifier_id, ""))
+                    lane_map[[lane_name]] <- lane_identifier
+                }
+            }
+
+            sample_entry <- list(
+                prefix = sample_prefix,
+                lanes = lane_map
+            )
+
+            if (!isTRUE(input[[ids$bc_cutoff$specified]])) {
+                bc_value <- input[[ids$bc_cutoff$value]]
+                if (is.null(bc_value) || is.na(bc_value)) {
+                    bc_value <- input$bc_cutoff
+                }
+                if (!is.null(bc_value) && !is.na(bc_value)) {
+                    sample_entry$bc_cutoff <- bc_value
+                }
+            }
+
+            if (!isTRUE(input[[ids$chunk_size$specified]])) {
+                chunk_value <- input[[ids$chunk_size$value]]
+                if (is.null(chunk_value) || is.na(chunk_value)) {
+                    chunk_value <- input$chunk_size
+                }
+                if (!is.null(chunk_value) && !is.na(chunk_value)) {
+                    sample_entry$streaming_chunk_size <- chunk_value
+                }
+            }
+
+            if (!isTRUE(input[[ids$feature_tag$specified]])) {
+                sample_entry$feature_tag <- trimws(input_value(ids$feature_tag$value, input$feature_tag))
+            }
+
+            if (!isTRUE(input[[ids$gene_attribute$specified]])) {
+                sample_entry$gene_id_attribute <- trimws(input_value(ids$gene_attribute$value, input$gene_id_attribute))
+            }
+
+            if (!isTRUE(input[[ids$suffix$specified]])) {
+                sample_entry$suffix <- trimws(input_value(ids$suffix$value, input$suffix))
+            }
+
+            if (!isTRUE(input[[ids$forward_suffix$specified]])) {
+                sample_entry$forward_suffix <- trimws(input_value(ids$forward_suffix$value, input$forward_suffix))
+            }
+
+            if (!isTRUE(input[[ids$reverse_suffix$specified]])) {
+                sample_entry$reverse_suffix <- trimws(input_value(ids$reverse_suffix$value, input$reverse_suffix))
+            }
+
+            if (!isTRUE(input[[ids$reference_genome$specified]])) {
+                sample_entry$reference_genome <- trimws(input_value(ids$reference_genome$value, input$reference_genome))
+            }
+
+            if (!isTRUE(input[[ids$reference_annotation$specified]])) {
+                sample_entry$reference_annotation <- trimws(input_value(ids$reference_annotation$value, input$reference_annotation))
+            }
+
+            samples[[sample_name]] <- sample_entry
+        }
+
+        samples
+    }
+
+    build_config <- function() {
+        config <- list(
+            prefix = trimws(input_value("prefix", "")),
+            suffix = trimws(input_value("suffix", "")),
+            forward_suffix = trimws(input_value("forward_suffix", "")),
+            reverse_suffix = trimws(input_value("reverse_suffix", "")),
+            reference_genome = trimws(input_value("reference_genome", "")),
+            reference_annotation = trimws(input_value("reference_annotation", "")),
+            streaming_chunk_size = input$chunk_size,
+            bc_cutoff = input$bc_cutoff,
+            feature_tag = trimws(input_value("feature_tag", "")),
+            gene_id_attribute = trimws(input_value("gene_id_attribute", "")),
+            samples = collect_samples()
+        )
+
+        if (is.null(config$streaming_chunk_size) || is.na(config$streaming_chunk_size)) {
+            config$streaming_chunk_size <- NULL
+        }
+        if (is.null(config$bc_cutoff) || is.na(config$bc_cutoff)) {
+            config$bc_cutoff <- NULL
+        }
+
+        Filter(Negate(is.null), config)
+    }
+
+    remove_all_samples <- function() {
+        current <- sample_registry()
+        for (tab_id in names(current)) {
+            removeTab(session = session, inputId = "samples_panel", target = tab_id)
+        }
+        sample_registry(list())
+        sample_counter(0L)
+    }
+
+    apply_config <- function(cfg) {
+        updateTextInput(session, "prefix", value = cfg$prefix %||% "")
+        updateTextInput(session, "reference_genome", value = cfg$reference_genome %||% "")
+        updateTextInput(session, "reference_annotation", value = cfg$reference_annotation %||% "")
+        updateTextInput(session, "suffix", value = cfg$suffix %||% "")
+        updateTextInput(session, "forward_suffix", value = cfg$forward_suffix %||% "")
+        updateTextInput(session, "reverse_suffix", value = cfg$reverse_suffix %||% "")
+        chunk_value <- coerce_numeric(cfg$streaming_chunk_size)
+        if (!is.null(chunk_value)) {
+            updateNumericInput(session, "chunk_size", value = chunk_value)
+        }
+        bc_value <- coerce_numeric(cfg$bc_cutoff)
+        if (!is.null(bc_value)) {
+            updateNumericInput(session, "bc_cutoff", value = bc_value)
+        }
+        if (!is.null(cfg$feature_tag)) {
+            updateTextInput(session, "feature_tag", value = cfg$feature_tag)
+        }
+        if (!is.null(cfg$gene_id_attribute)) {
+            updateTextInput(session, "gene_id_attribute", value = cfg$gene_id_attribute)
+        }
+
+        remove_all_samples()
+
+        samples_cfg <- cfg$samples
+        if (is.null(names(samples_cfg))) {
+            names(samples_cfg) <- paste0("sample_", seq_along(samples_cfg))
+        }
+        if (length(samples_cfg) == 0) {
+            return(invisible())
+        }
+
+        for (sample_name in names(samples_cfg)) {
+            sample_details <- samples_cfg[[sample_name]]
+            if (is.null(sample_details) || !is.list(sample_details)) {
+                sample_details <- list()
+            }
+            sample_details$name <- sample_name
+            sample_details$.__from_config__ <- TRUE
+            add_sample_tab(initial = sample_details)
+        }
+    }
 
     
     observeEvent(input$SaveYAML, {
-        write_yaml(
-            x = makeYAML(input),
-            file = input$savePath
+        req(nzchar(input$savePath))
+        config <- build_config()
+        tryCatch(
+            {
+                write_yaml(config, input$savePath)
+                showNotification(glue("Saved configuration to {input$savePath}"), type = "message")
+            },
+            error = function(err) {
+                showNotification(glue("Failed to save YAML: {err$message}"), type = "error")
+            }
         )
     })
 
     output$downloadData <- downloadHandler(
         filename = function() {
-            paste(input$runID, ".yaml", sep = "")
+            if (nzchar(input$savePath)) {
+                return(basename(input$savePath))
+            }
+            paste0("config-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".yaml")
         },
         content = function(file) {
-            write_yaml(
-                makeYAML(input),
-                file
-            )
-            # write.csv(datasetInput(), file, row.names = FALSE)
+            write_yaml(build_config(), file)
         }
     )
 
-    makeYAML <- function(input) {
-        # collect fastq file information
-        seqf <- list()
-        for (i in 1:input$nfiles) {
-            bc_struc <- c(input[[paste0("cDNA_", i)]], input[[paste0("BC_", i)]], input[[paste0("UMI_", i)]])
-            names(bc_struc) <- c("cDNA", "BC", "UMI")
-            bc_struc <- bc_struc[which(bc_struc != "")]
-
-
-            if (input$patternsearch == F & input$frameshiftsearch == F) {
-                seqf[[i]] <- list(
-                    "name" = input[[paste0("fqpath_", i)]],
-                    "base_definition" = paste0(names(bc_struc), "(", bc_struc, ")")
-                )
-            } else {
-                if (input$patternsearch == T & substr(input$patternRead, 6, 6) == i) {
-                    seqf[[i]] <- list(
-                        "name" = input[[paste0("fqpath_", i)]],
-                        "base_definition" = paste0(names(bc_struc), "(", bc_struc, ")"),
-                        "find_pattern" = input$pattern
-                    )
-                } else {
-                    if (input$frameshiftsearch == T & substr(input$patternRead, 6, 6) == i) {
-                        seqf[[i]] <- list(
-                            "name" = input[[paste0("fqpath_", i)]],
-                            "base_definition" = paste0(names(bc_struc), "(", bc_struc, ")"),
-                            "correct_frameshift" = input$pattern
-                        )
-                    } else {
-                        seqf[[i]] <- list(
-                            "name" = input[[paste0("fqpath_", i)]],
-                            "base_definition" = paste0(names(bc_struc), "(", bc_struc, ")")
-                        )
-                    }
-                }
-            }
-        }
-        names(seqf) <- paste0("file", 1:input$nfiles)
-
-        # collect potential additional fasta files
-        if (input$NUMadditionalFA > 0) {
-            fa_list <- c()
-            for (i in 1:input$NUMadditionalFA) {
-                fa_list <- c(fa_list, input[[paste0("FA_", i)]])
-            }
-        } else {
-            fa_list <- NULL
-        }
-
-        # decide on barcode param
-        # if(input$barcodeChoice)
-
-        # make yaml list
-        y <- list(
-            "project" = input$runID,
-            "sequence_files" = seqf,
-            "reference" = list(
-                "STAR_index" = input$STARpath,
-                "GTF_file" = input$GTFpath,
-                "additional_STAR_params" = input$STARparams,
-                "additional_files" = fa_list
-            ),
-            "out_dir" = input$outDir,
-            "num_threads" = input$numThreads,
-            "mem_limit" = input$memLimit,
-            "filter_cutoffs" = list(
-                "BC_filter" = list(
-                    "num_bases" = input$BCbases,
-                    "phred" = input$BCphred
-                ),
-                "UMI_filter" = list(
-                    "num_bases" = input$UMIbases,
-                    "phred" = input$UMIphred
-                )
-            ),
-            "barcodes" = list(
-                "barcode_num" = input$BCnum,
-                "barcode_file" = input$BCfile,
-                "barcode_sharing" = input$sharedBC,
-                "automatic" = ifelse(input$barcodeChoice == "Automatic", TRUE, FALSE),
-                "BarcodeBinning" = input$HamBC,
-                "nReadsperCell" = input$nReadsBC,
-                "demultiplex" = input$demux
-            ),
-            "counting_opts" = list(
-                "introns" = input$countIntrons,
-                "downsampling" = input$downsamp,
-                "strand" = as.integer(input$strand),
-                "Ham_Dist" = input$HamDist,
-                "write_ham" = input$writeHam,
-                "velocyto" = input$doVelocity,
-                "primaryHit" = input$countPrimary,
-                "twoPass" = input$twoPass
-            ),
-            "make_stats" = input$makeStats,
-            "which_Stage" = input$whichStage,
-            "Rscript_exec" = input$r_exec,
-            "STAR_exec" = input$star_exec,
-            "pigz_exec" = input$pigz_exec,
-            "samtools_exec" = input$samtools_exec
-        )
-        return(y)
-    }
-
     observeEvent(input$LoadYAML, {
-        if (file.exists(input$inYAML)) {
-            print(paste("Loading", input$inYAML))
-            loading_func(input$inYAML)
-            updateNavlistPanel(session = session, inputId = "mainNav", selected = "Mandatory Parameters")
-        } else {
-            if (is.null(input$file1)) {
-                print("File doesn't exist!")
-            } else {
-                print(paste("Loading", input$file1$datapath))
-                loading_func(input$file1$datapath)
-                updateNavlistPanel(session = session, inputId = "mainNav", selected = "Mandatory Parameters")
-            }
+        candidate_path <- NULL
+        if (nzchar(input$inYAML) && file.exists(input$inYAML)) {
+            candidate_path <- input$inYAML
+        } else if (!is.null(input$file1) && file.exists(input$file1$datapath)) {
+            candidate_path <- input$file1$datapath
         }
+
+        if (is.null(candidate_path)) {
+            showNotification("Please provide a valid YAML path or upload a file.", type = "warning")
+            return()
+        }
+
+        cfg <- tryCatch(
+            read_yaml(candidate_path),
+            error = function(err) {
+                showNotification(glue("Failed to load YAML: {err$message}"), type = "error")
+                NULL
+            }
+        )
+        if (is.null(cfg)) {
+            return()
+        }
+
+        if (is.null(cfg$samples)) {
+            cfg$samples <- list()
+        }
+
+        if (!is.list(cfg$samples)) {
+            showNotification("The `samples` entry in the YAML file must be a mapping of sample names to settings.", type = "error")
+            return()
+        }
+
+        apply_config(cfg)
+        updateNavlistPanel(session = session, inputId = "mainNav", selected = "General options")
+        showNotification(glue("Loaded configuration from {basename(candidate_path)}"), type = "message")
     })
-
-    loading_func <- function(myYAML) {
-        ya <- read_yaml(file = myYAML)
-        updateTextInput(session = session, inputId = "runID", value = ya$project)
-        updateTextInput(session = session, inputId = "outDir", value = ya$out_dir)
-        updateTextInput(session = session, inputId = "STARpath", value = ya$reference$STAR_index)
-        updateTextInput(session = session, inputId = "GTFpath", value = ya$reference$GTF_file)
-        updateTextInput(session = session, inputId = "STARparams", value = ya$reference$additional_STAR_params)
-    updateTextInput(session = session, inputId = "suffix", value = if (!is.null(ya$suffix)) ya$suffix else "")
-    updateTextInput(session = session, inputId = "forward_suffix", value = if (!is.null(ya$forward_suffix)) ya$forward_suffix else "")
-    updateTextInput(session = session, inputId = "reverse_suffix", value = if (!is.null(ya$reverse_suffix)) ya$reverse_suffix else "")
-        updateNumericInput(session = session, inputId = "NUMadditionalFA", value = length(ya$reference$additional_files))
-        if (length(ya$reference$additional_files) > 0) {
-            for (i in 1:length(ya$reference$additional_files)) {
-                updateTextInput(session = session, inputId = paste0("FA_", i), value = ya$reference$additional_files[i])
-            }
-        }
-        updateSliderInput(session = session, inputId = "nfiles", value = length(ya$sequence_files))
-        for (i in 1:length(ya$sequence_files)) {
-            updateTextInput(session = session, inputId = paste0("fqpath_", i), value = ya$sequence_files[[i]]$name)
-
-            if (any(grepl("BC", ya$sequence_files[[i]]$base_definition))) {
-                bc_string <- grep("BC", ya$sequence_files[[i]]$base_definition, value = T)
-                bc_string <- substr(bc_string, start = 4, stop = nchar(bc_string) - 1)
-                updateTextInput(session = session, inputId = paste0("BC_", i), value = bc_string)
-            }
-            if (any(grepl("UMI", ya$sequence_files[[i]]$base_definition))) {
-                umi_string <- grep("UMI", ya$sequence_files[[i]]$base_definition, value = T)
-                umi_string <- substr(umi_string, start = 5, stop = nchar(umi_string) - 1)
-                updateTextInput(session = session, inputId = paste0("UMI_", i), value = umi_string)
-            }
-            if (any(grepl("cDNA", ya$sequence_files[[i]]$base_definition))) {
-                cdna_string <- grep("cDNA", ya$sequence_files[[i]]$base_definition, value = T)
-                cdna_string <- substr(cdna_string, start = 6, stop = nchar(cdna_string) - 1)
-                updateTextInput(session = session, inputId = paste0("cDNA_", i), value = cdna_string)
-            }
-            if (length(ya$sequence_files[[i]]$find_pattern) == 1) {
-                updateCheckboxInput(session = session, inputId = "patternsearch", value = T)
-                updateSelectInput(session = session, inputId = "patternRead", choices = paste("Read", 1:length(ya$sequence_files)), selected = paste("Read", i))
-                updateTextInput(session = session, inputId = "pattern", value = ya$sequence_files[[i]]$find_pattern)
-            }
-            if (length(ya$sequence_files[[i]]$correct_frameshift) == 1) {
-                updateCheckboxInput(session = session, inputId = "frameshiftsearch", value = T)
-                updateSelectInput(session = session, inputId = "patternRead", choices = paste("Read", 1:length(ya$sequence_files)), selected = paste("Read", i))
-                updateTextInput(session = session, inputId = "pattern", value = ya$sequence_files[[i]]$correct_frameshift)
-            }
-        }
-
-        updateNumericInput(session = session, inputId = "BCbases", value = ya$filter_cutoffs$BC_filter$num_bases)
-        updateNumericInput(session = session, inputId = "BCphred", value = ya$filter_cutoffs$BC_filter$phred)
-        updateNumericInput(session = session, inputId = "UMIbases", value = ya$filter_cutoffs$UMI_filter$num_bases)
-        updateNumericInput(session = session, inputId = "UMIphred", value = ya$filter_cutoffs$UMI_filter$phred)
-        updateNumericInput(session = session, inputId = "numThreads", value = ya$num_threads)
-        updateNumericInput(session = session, inputId = "memLimit", value = ya$mem_limit)
-        updateCheckboxInput(session = session, inputId = "makeStats", value = ya$make_stats)
-        updateSelectInput(session = session, inputId = "whichStage", selected = ya$which_Stage)
-        updateCheckboxInput(session = session, inputId = "countIntrons", value = ya$counting_opts$introns)
-        updateTextInput(session = session, inputId = "downsamp", value = ya$counting_opts$downsampling)
-        updateSelectInput(session = session, inputId = "strand", selected = ya$counting_opts$strand)
-        updateNumericInput(session = session, inputId = "HamDist", value = ya$counting_opts$Ham_Dist)
-        updateCheckboxInput(session = session, inputId = "writeHam", value = ya$counting_opts$write_ham)
-        updateCheckboxInput(session = session, inputId = "doVelocity", value = ya$counting_opts$velocyto)
-        updateCheckboxInput(session = session, inputId = "countPrimary", value = ya$counting_opts$primaryHit)
-        updateCheckboxInput(session = session, inputId = "twoPass", value = ya$counting_opts$twoPass)
-        if (is.null(ya$barcodes$barcode_num) & ya$barcodes$automatic == TRUE) {
-            updateRadioButtons(session = session, inputId = "barcodeChoice", selected = "Automatic")
-            updateTextInput(session = session, inputId = "BCfile", value = ya$barcodes$barcode_file)
-        }
-        if (!is.null(ya$barcodes$barcode_file) & ya$barcodes$automatic == FALSE) {
-            updateRadioButtons(session = session, inputId = "barcodeChoice", selected = "Barcode whitelist")
-            updateTextInput(session = session, inputId = "BCfile", value = ya$barcodes$barcode_file)
-        }
-        if (!is.null(ya$barcodes$barcode_num)) {
-            updateRadioButtons(session = session, inputId = "barcodeChoice", selected = "Number of top Barcodes")
-            updateNumericInput(session = session, inputId = "BCnum", value = ya$barcodes$barcode_num)
-        }
-
-        updateNumericInput(session = session, inputId = "HamBC", value = ya$barcodes$BarcodeBinning)
-        updateNumericInput(session = session, inputId = "nReadsBC", value = ya$barcodes$nReadsperCell)
-        updateTextInput(session = session, inputId = "sharedBC", value = ya$barcodes$barcode_sharing)
-        updateCheckboxInput(session = session, inputId = "demux", value = ya$barcodes$demultiplex)
-
-        if (!is.null(ya$read_layout)) {
-            updateSelectInput(session = session, inputId = "layout", selected = ya$read_layout)
-        }
-
-        updateTextInput(session = session, inputId = "r_exec", value = ya$Rscript_exec)
-        updateTextInput(session = session, inputId = "samtools_exec", value = ya$samtools_exec)
-        updateTextInput(session = session, inputId = "pigz_exec", value = ya$pigz_exec)
-        updateTextInput(session = session, inputId = "star_exec", value = ya$STAR_exec)
-    }
 }
 
 create_self_naming_list <- function(x) {

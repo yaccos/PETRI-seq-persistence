@@ -6,28 +6,21 @@ general_option_panel <- tabPanel(
             textInput("prefix", "Directory of input data", value = "data/"),
             textInput("reference_genome", "Reference genome for alignment"),
             textOutput("path_reference_genome") |> h6(),
-            # shinyBS::bsTooltip(
-            #     id = "reference_genome", title = "Will be overrided for the samples which specify the reference genome differently",
-            #     placement = "bottom", trigger = "hover", options = list(container = "body")
-            # ),
             textInput("reference_annotation", "Annotation GTF file"),
             textOutput("path_reference_annotation") |> h6(),
-            # shinyBS::bsTooltip(
-            #     id = "reference_annotation", title = "Will be overrided for the samples which specify the reference annotation differently",
-            #     placement = "bottom", trigger = "hover", options = list(container = "body")
-            # )
-            textInput("suffix", "Common suffix for all read files", value = ".fq.gz"),
-            textInput("forward_suffix", "Suffix for forward read files", value = "_R1"),
-            textInput("reverse_suffix", "Suffix for reverse read files", value = "_R2")
+            textInput("suffix", "Common suffix for all read files", value = ""),
+            textInput("forward_suffix", "Suffix for forward read files", value = ""),
+            textInput("reverse_suffix", "Suffix for reverse read files", value = "")
         )),
         column(6, wellPanel(
             h4("Parameter options"),
             numericInput("chunk_size", "Chunk size for data streaming", value = 2e5, step = 10000),
             numericInput("bc_cutoff", "Number of barcode combinations to use", value = 1e4, step = 1000),
-            shinyBS::bsTooltip(
-                id = "bc_cutoff", title = "Must be specified if you attempting to run the entire pipeline to completion.
-                             If you have not decided in advance, run the rule `determine_bc_cutoff` and follow the subsequent instructions.",
-                placement = "bottom", trigger = "hover", options = list(container = "body")
+            shinyBS::bsTooltip("bc_cutoff",
+             title = "Must be specified if you attempting to run the entire pipeline to completion. If you have not decided in advance, run the rule `determine_bc_cutoff` and follow the subsequent instructions.",
+                placement = "bottom",
+                trigger = "hover",
+                options = list(container = "body")
             ),
             textInput("feature_tag", "The feature tag in the GTF file to be used for genes", "Coding_or_RNA"),
             textInput("gene_id_attribute", "The attribute in the GTF to be used for the gene identifiers", "name")
@@ -41,9 +34,9 @@ sample_configuration_panel <- tabPanel(
         fluidRow(
             actionButton("add_sample", "Add sample", icon = icon("plus-square")),
             actionButton("remove_sample", "Remove selected sample", icon = icon("minus-square"))
-      ),
-      br(),
-      fluidRow(tabsetPanel(
+        ),
+        br(),
+        fluidRow(tabsetPanel(
             id = "samples_panel",
         ))
     )
@@ -68,7 +61,7 @@ load_yaml_panel <- tabPanel(
 save_yaml_panel <- tabPanel(
     "Generate YAML",
     p(strong("Your YAML is nearly ready...")),
-    uiOutput("saveUI"),
+    textInput("savePath", "Save YAML to", value = "config.yaml"),
     actionButton(inputId = "SaveYAML", label = "Save YAML!"),
     p(),
     p(strong("...or download your YAML file by clicking here:")),
