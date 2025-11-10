@@ -1,20 +1,12 @@
 # Define server logic
 server <- function(input, output, session) {
     sample_counter <- reactiveVal(0L)
-    active_tabs <- 
-    prefix <- reactive(ifelse(input$prefix |> endsWith("/") || input$prefix == "", input$prefix, paste0(input$prefix, "/")))
+    active_tabs <-
+        prefix <- reactive(ifelse(input$prefix |> endsWith("/") || input$prefix == "", input$prefix, paste0(input$prefix, "/")))
     output$path_reference_genome <- renderText(glue("Relative path: {prefix()}{input$reference_genome}"))
     output$path_reference_annotation <- renderText(glue("Relative path: {prefix()}{input$reference_annotation}"))
-    output$barcodeUI <- renderUI({
-        switch(input$barcodeChoice,
-            # "Automatic" = p(em("Intact barcodes will be detected automatically.")),
-            "Automatic" = textInput(inputId = "BCfile", label = "Optional: File to barcode whitelist to use for guiding automatic detection", value = NULL),
-            "Number of top Barcodes" = numericInput(inputId = "BCnum", label = "Number of barcodes to consider:", value = 100, min = 10, step = 1),
-            "Barcode whitelist" = textInput(inputId = "BCfile", label = "File to barcode whitelist to use:", value = "/fullpath/to/file.txt")
-        )
-    })
-
-    observe({
+    observe(
+        {
         this_sample_number <- sample_counter() + 1L
         tab_id <- "sample_{this_sample_number}" |> glue()
         name_id <- "sample_name_{this_sample_number}" |> glue()
@@ -23,39 +15,77 @@ server <- function(input, output, session) {
         suffix_id <- "sample_suffix_{this_sample_number}" |> glue()
         forward_suffix_id <- "sample_forward_suffix_{this_sample_number}" |> glue()
         reverse_suffix_id <- "sample_reverse_suffix_{this_sample_number}" |> glue()
-        bc_specified_id = "sample_bc_specified_{this_sample_number}" |> glue()
-        bc_field_id = "sample_bc_field_{this_sample_number}" |> glue()
-        bc_cutoff_id = "sample_bc_cutoff_{this_sample_number}" |> glue()
+        bc_specified_id <- "sample_bc_specified_{this_sample_number}" |> glue()
+        bc_field_id <- "sample_bc_field_{this_sample_number}" |> glue()
+        bc_cutoff_id <- "sample_bc_cutoff_{this_sample_number}" |> glue()
+        chunk_size_specified_id  <- "sample_chunk_size_specified_{this_sample_number}" |> glue()
+        chunk_size_field_id  <- "sample_chunk_size_field_{this_sample_number}" |> glue()
+        chunk_size_id  <- "sample_chunk_size_{this_sample_number}" |> glue()
+        feature_tag_specified_id <- "sample_feature_tag_spesified_{this_sample_number}" |> glue()
+        feature_tag_field_id <- "sample_feature_tag_field_{this_sample_number}" |> glue()
+        feature_tag_id <- "sample_feature_tag_{this_sample_number}" |> glue()
+        gene_attribute_specified_id <- "sample_gene_attribute_spesified_{this_sample_number}" |> glue()
+        gene_attribute_field_id <- "sample_gene_attribute_field_{this_sample_number}" |> glue()
+        gene_attribute_id <- "sample_gene_attribute_{this_sample_number}" |> glue()
         appendTab(
             session = session,
             inputId = "samples_panel",
             tabPanel(
                 title = uiOutput(title_id),
                 value = tab_id,
-                textInput(name_id,
-                    "Sample name",
-                    value = "Sample {this_sample_number}" |> glue()
+                    wellPanel(
+                        h4("Path options"),
+                    textInput(name_id,
+                        "Sample name",
+                        value = "Sample {this_sample_number}" |> glue()
+                    ),
+                    textInput(prefix_id,
+                        "Common prefix for all files related to sample",
+                        value = "" |> glue()
+                    ),
+                    textInput(suffix_id,
+                        "Common suffix for all files related to sample",
+                        value = "" |> glue()
+                    ),
+                    textInput(forward_suffix_id,
+                        "Suffix for forward read files",
+                        value = "" |> glue()
+                    ),
+                    textInput(reverse_suffix_id,
+                        "Suffix for reverse read files",
+                        value = "" |> glue()
+                    )
                 ),
-                textInput(prefix_id,
-                    "Common prefix for all files related to sample",
-                    value = "" |> glue()
-                ),
-                textInput(suffix_id,
-                    "Common suffix for all files related to sample",
-                    value = "" |> glue()
-                ),
-                textInput(forward_suffix_id,
-                    "Suffix for forward read files",
-                    value = "" |> glue()
-                ),
-                textInput(reverse_suffix_id,
-                    "Suffix for reverse read files",
-                    value = "" |> glue()
-                ),
-                checkboxInput(bc_specified_id, "Use same barcode cutoff as in the general settings?",value=TRUE),
-                uiOutput(bc_field_id)
+                wellPanel(
+                    h4("Parameter options"),
+                    checkboxInput(bc_specified_id, "Use same barcode cutoff as in the general settings?", value = TRUE),
+                    uiOutput(bc_field_id),
+                    checkboxInput(chunk_size_specified_id, "Use same streaming chunk size as in the general settings?", value = TRUE),
+                    uiOutput(chunk_size_field_id),
+                    checkboxInput(feature_tag_specified_id, "Use same GTF feature tag as in the general settings?", value = TRUE),
+                    uiOutput(feature_tag_field_id),
+                    checkboxInput(gene_attribute_specified_id, "Use same GTF gene attribute tag as in the general settings?", value = TRUE),
+                    uiOutput(gene_attribute_field_id),
+
+
+                )
+                ,
+                wellPanel(
+                    h4("Reference and annotation input"),
+                    checkboxInput(bc_specified_id, "Use same barcode cutoff as in the general settings?", value = TRUE),
+                    uiOutput(bc_field_id),
+                    checkboxInput(chunk_size_specified_id, "Use same streaming chunk size as in the general settings?", value = TRUE),
+                    uiOutput(chunk_size_field_id),
+                    checkboxInput(feature_tag_specified_id, "Use same GTF feature tag as in the general settings?", value = TRUE),
+                    uiOutput(feature_tag_field_id),
+                    checkboxInput(gene_attribute_specified_id, "Use same GTF gene attribute tag as in the general settings?", value = TRUE),
+                    uiOutput(gene_attribute_field_id),
+
+
+                )
+                
+                )
             )
-        )
         output[[title_id]] <- renderText({
             req(input[[name_id]])
             input[[name_id]]
@@ -63,13 +93,48 @@ server <- function(input, output, session) {
         output[[bc_field_id]] <- renderUI({
             req(input$bc_cutoff)
             if (input[[bc_specified_id]] |> isTRUE()) {
-            "Keeping {input$bc_cutoff} barcodes" |> glue()  |> h4()  
-        } else {
-            numericInput(bc_cutoff_id, "Number of barcode combinations to use:", value = 1e4, step = 1000)
-        }
-        }
-        )
+                "Keeping {input$bc_cutoff} barcodes" |>
+                    glue() |>
+                    h6()
+            } else {
+                numericInput(bc_cutoff_id, "Number of barcode combinations to use:", value = 1e4, step = 1000)
+            }
+        })
+        output[[chunk_size_field_id]] <- renderUI({
+            req(input$chunk_size)
+            if (input[[chunk_size_specified_id]] |> isTRUE()) {
+                "Chunk size for streaming: {input$chunk_size} reads" |>
+                    glue() |>
+                    h6()
+            } else {
+                numericInput(chunk_size_id, "Streaming chunk size:", value = 2e5, step = 1e4)
+            }
+        })
+        output[[feature_tag_field_id]] <- renderUI({
+            req(input$feature_tag)
+            if (input[[feature_tag_specified_id]] |> isTRUE()) {
+                "GTF file feature tag: {input$feature_tag}" |>
+                    glue() |>
+                    h6()
+            } else {
+                textInput(feature_tag_id, "GTF file feature tag", value = "Coding_or_RNA")
+            }
+        })
         sample_counter(this_sample_number)
+        output[[gene_attribute_field_id]] <- renderUI({
+            req(input$gene_id_attribute)
+            if (input[[gene_attribute_specified_id]] |> isTRUE()) {
+                "GTF file feature tag: {input$gene_id_attribute}" |>
+                    glue() |>
+                    h6()
+            } else {
+                textInput(gene_attribute_id, "GTF file tag for gene identifiers", value = "name")
+            }
+        })
+
+
+        sample_counter(this_sample_number)
+
     }) |> bindEvent(input$add_sample)
 
     observe({

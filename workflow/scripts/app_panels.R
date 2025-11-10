@@ -5,13 +5,13 @@ general_option_panel <- tabPanel(
             h4("Data and file input"),
             textInput("prefix", "Directory of input data", value = "data/"),
             textInput("reference_genome", "Reference genome for alignment"),
-            textOutput("path_reference_genome") |> h4(),
+            textOutput("path_reference_genome") |> h6(),
             # shinyBS::bsTooltip(
             #     id = "reference_genome", title = "Will be overrided for the samples which specify the reference genome differently",
             #     placement = "bottom", trigger = "hover", options = list(container = "body")
             # ),
             textInput("reference_annotation", "Annotation GTF file"),
-            textOutput("path_reference_annotation") |> h4(),
+            textOutput("path_reference_annotation") |> h6(),
             # shinyBS::bsTooltip(
             #     id = "reference_annotation", title = "Will be overrided for the samples which specify the reference annotation differently",
             #     placement = "bottom", trigger = "hover", options = list(container = "body")
@@ -19,7 +19,7 @@ general_option_panel <- tabPanel(
         )),
         column(6, wellPanel(
             h4("Parameter options"),
-            numericInput("chunk_size", "Chunk size for data streaming", value = 1e6, step = 10000),
+            numericInput("chunk_size", "Chunk size for data streaming", value = 2e5, step = 10000),
             numericInput("bc_cutoff", "Number of barcode combinations to use", value = 1e4, step = 1000),
             shinyBS::bsTooltip(
                 id = "bc_cutoff", title = "Must be specified if you attempting to run the entire pipeline to completion.
