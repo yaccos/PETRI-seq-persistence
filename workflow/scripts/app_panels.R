@@ -16,6 +16,9 @@ general_option_panel <- tabPanel(
             #     id = "reference_annotation", title = "Will be overrided for the samples which specify the reference annotation differently",
             #     placement = "bottom", trigger = "hover", options = list(container = "body")
             # )
+            textInput("suffix", "Common suffix for all read files", value = ".fq.gz"),
+            textInput("forward_suffix", "Suffix for forward read files", value = "_R1"),
+            textInput("reverse_suffix", "Suffix for reverse read files", value = "_R2")
         )),
         column(6, wellPanel(
             h4("Parameter options"),

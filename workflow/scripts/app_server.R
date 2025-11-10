@@ -1,8 +1,16 @@
 # Define server logic
 server <- function(input, output, session) {
     sample_counter <- reactiveVal(0L)
-    active_tabs <-
-        prefix <- reactive(ifelse(input$prefix |> endsWith("/") || input$prefix == "", input$prefix, paste0(input$prefix, "/")))
+    prefix <- reactive(ifelse(input$prefix |> endsWith("/") || input$prefix == "", input$prefix, paste0(input$prefix, "/")))
+
+    input_value <- function(id, default = "") {
+        value <- input[[id]]
+        if (is.null(value)) {
+            default
+        } else {
+            value
+        }
+    }
     output$path_reference_genome <- renderText(glue("Relative path: {prefix()}{input$reference_genome}"))
     output$path_reference_annotation <- renderText(glue("Relative path: {prefix()}{input$reference_annotation}"))
 
@@ -11,10 +19,20 @@ server <- function(input, output, session) {
         {
             this_sample_number <- sample_counter() + 1L
 
-            override_params <- c("bc_cutoff", "chunk_size", "feature_tag", "gene_attribute") |> create_self_naming_list()
+                        override_params <- c(
+                                "bc_cutoff",
+                                "chunk_size",
+                                "feature_tag",
+                                "gene_attribute",
+                                "suffix",
+                                "forward_suffix",
+                                "reverse_suffix",
+                                "reference_genome",
+                                "reference_annotation"
+                        ) |> create_self_naming_list()
             override_elements <- c("specified", "field", "value") |> create_self_naming_list()
 
-            basic_ids <- c("tab", "name", "title", "prefix", "suffix", "forward_suffix", "reverse_suffix") |>
+                        basic_ids <- c("tab", "name", "title", "prefix", "lane_count", "lanes") |>
               create_self_naming_list()  |>
               map(\(id) "sample_{id}_{this_sample_number}" |> glue())
 
@@ -28,50 +46,69 @@ server <- function(input, output, session) {
 
             ids <- c(basic_ids, override_ids)
 
+            resolve_override <- function(key, general_id, default = "") {
+                if (isTRUE(input[[ids[[key]]$specified]])) {
+                    input_value(general_id, default)
+                } else {
+                    input_value(ids[[key]]$value, default)
+                }
+            }
+
             appendTab(
                 session = session,
                 inputId = "samples_panel",
                 tabPanel(
                     title = uiOutput(ids$title),
                     value = ids$tab,
-                    wellPanel(
-                        h4("Path options"),
-                        textInput(
-                            inputId = ids$name,
-                            label = "Sample name",
-                            value = glue("Sample {this_sample_number}")
+                    fluidRow(
+                        column(
+                            width = 6,
+                            wellPanel(
+                                h4("Path options"),
+                                textInput(
+                                    inputId = ids$name,
+                                    label = "Sample name",
+                                    value = glue("Sample {this_sample_number}")
+                                ),
+                                textInput(
+                                    inputId = ids$prefix,
+                                    label = "Common prefix for all read files in sample",
+                                    value = ""
+                                ),
+                                checkboxInput(ids$suffix$specified, "Use common suffix from general settings?", value = TRUE),
+                                uiOutput(ids$suffix$field),
+                                checkboxInput(ids$forward_suffix$specified, "Use forward read suffix from general settings?", value = TRUE),
+                                uiOutput(ids$forward_suffix$field),
+                                checkboxInput(ids$reverse_suffix$specified, "Use reverse read suffix from general settings?", value = TRUE),
+                                uiOutput(ids$reverse_suffix$field)
+                            ),
+                            wellPanel(
+                                h4("Parameter options"),
+                                checkboxInput(ids$bc_cutoff$specified, "Use same barcode cutoff as in the general settings?", value = TRUE),
+                                uiOutput(ids$bc_cutoff$field),
+                                checkboxInput(ids$chunk_size$specified, "Use same streaming chunk size as in the general settings?", value = TRUE),
+                                uiOutput(ids$chunk_size$field),
+                                checkboxInput(ids$feature_tag$specified, "Use same GTF feature tag as in the general settings?", value = TRUE),
+                                uiOutput(ids$feature_tag$field),
+                                checkboxInput(ids$gene_attribute$specified, "Use same GTF gene attribute tag as in the general settings?", value = TRUE),
+                                uiOutput(ids$gene_attribute$field)
+                            ),
+                            wellPanel(
+                                h4("Reference files"),
+                                checkboxInput(ids$reference_genome$specified, "Use reference genome from general settings?", value = TRUE),
+                                uiOutput(ids$reference_genome$field),
+                                checkboxInput(ids$reference_annotation$specified, "Use reference annotation from general settings?", value = TRUE),
+                                uiOutput(ids$reference_annotation$field)
+                            )
                         ),
-                        textInput(
-                            inputId = ids$prefix,
-                            label = "Common prefix for all read files in sample",
-                            value = ""
-                        ),
-                        textInput(
-                            inputId = ids$suffix,
-                            label = "Common suffix for all read files in sample",
-                            value = ""
-                        ),
-                        textInput(
-                            inputId = ids$forward_suffix,
-                            label = "Suffix for forward read files",
-                            value = ""
-                        ),
-                        textInput(
-                            inputId = ids$reverse_suffix,
-                            label = "Suffix for reverse read files",
-                            value = ""
+                        column(
+                            width = 6,
+                            wellPanel(
+                                h4("Lane configuration"),
+                                numericInput(ids$lane_count, "Number of lanes", value = 1, min = 1, step = 1),
+                                uiOutput(ids$lanes)
+                            )
                         )
-                    ),
-                    wellPanel(
-                        h4("Parameter options"),
-                        checkboxInput(ids$bc_cutoff$specified, "Use same barcode cutoff as in the general settings?", value = TRUE),
-                        uiOutput(ids$bc_cutoff$field),
-                        checkboxInput(ids$chunk_size$specified, "Use same streaming chunk size as in the general settings?", value = TRUE),
-                        uiOutput(ids$chunk_size$field),
-                        checkboxInput(ids$feature_tag$specified, "Use same GTF feature tag as in the general settings?", value = TRUE),
-                        uiOutput(ids$feature_tag$field),
-                        checkboxInput(ids$gene_attribute$specified, "Use same GTF gene attribute tag as in the general settings?", value = TRUE),
-                        uiOutput(ids$gene_attribute$field)
                     )
                 )
             )
@@ -115,6 +152,147 @@ server <- function(input, output, session) {
                 } else {
                     textInput(ids$gene_attribute$value, "GTF file tag for gene identifiers", value = "name")
                 }
+            })
+
+            output[[ids$suffix$field]] <- renderUI({
+                suffix_value <- input_value("suffix")
+                if (isTRUE(input[[ids$suffix$specified]])) {
+                    glue("Common suffix: {suffix_value}") |> h6()
+                } else {
+                    textInput(ids$suffix$value, "Common suffix for all read files", value = suffix_value)
+                }
+            })
+
+            output[[ids$forward_suffix$field]] <- renderUI({
+                suffix_value <- input_value("forward_suffix")
+                if (isTRUE(input[[ids$forward_suffix$specified]])) {
+                    glue("Forward read suffix: {suffix_value}") |> h6()
+                } else {
+                    textInput(ids$forward_suffix$value, "Suffix for forward read files", value = suffix_value)
+                }
+            })
+
+            output[[ids$reverse_suffix$field]] <- renderUI({
+                suffix_value <- input_value("reverse_suffix")
+                if (isTRUE(input[[ids$reverse_suffix$specified]])) {
+                    glue("Reverse read suffix: {suffix_value}") |> h6()
+                } else {
+                    textInput(ids$reverse_suffix$value, "Suffix for reverse read files", value = suffix_value)
+                }
+            })
+
+            reference_genome_path_id <- glue("{ids$reference_genome$value}_path")
+
+            output[[reference_genome_path_id]] <- renderText({
+                req(!isTRUE(input[[ids$reference_genome$specified]]))
+                sample_prefix_value <- input_value(ids$prefix, "")
+                sample_genome_value <- input_value(ids$reference_genome$value, "")
+                glue("Relative path: {prefix()}{sample_prefix_value}{sample_genome_value}")
+            })
+
+            output[[ids$reference_genome$field]] <- renderUI({
+                genome_value <- input_value("reference_genome")
+                if (isTRUE(input[[ids$reference_genome$specified]])) {
+                    if (nzchar(genome_value)) {
+                        glue("Reference genome: {prefix()}{genome_value}") |> h6()
+                    } else {
+                        h6("Reference genome not set")
+                    }
+                } else {
+                    existing_value <- isolate(input[[ids$reference_genome$value]])
+                    sample_genome_value <- if (is.null(existing_value)) genome_value else existing_value
+                    tagList(
+                        textInput(ids$reference_genome$value, "Reference genome for this sample", value = sample_genome_value),
+                        h6(textOutput(reference_genome_path_id))
+                    )
+                }
+            })
+
+            reference_annotation_path_id <- glue("{ids$reference_annotation$value}_path")
+
+            output[[reference_annotation_path_id]] <- renderText({
+                req(!isTRUE(input[[ids$reference_annotation$specified]]))
+                sample_prefix_value <- input_value(ids$prefix, "")
+                sample_annotation_value <- input_value(ids$reference_annotation$value, "")
+                glue("Relative path: {prefix()}{sample_prefix_value}{sample_annotation_value}")
+            })
+
+            output[[ids$reference_annotation$field]] <- renderUI({
+                annotation_value <- input_value("reference_annotation")
+                if (isTRUE(input[[ids$reference_annotation$specified]])) {
+                    if (nzchar(annotation_value)) {
+                        glue("Reference annotation: {prefix()}{annotation_value}") |> h6()
+                    } else {
+                        h6("Reference annotation not set")
+                    }
+                } else {
+                    existing_value <- isolate(input[[ids$reference_annotation$value]])
+                    sample_annotation_value <- if (is.null(existing_value)) annotation_value else existing_value
+                    tagList(
+                        textInput(ids$reference_annotation$value, "Reference annotation for this sample", value = sample_annotation_value),
+                        h6(textOutput(reference_annotation_path_id))
+                    )
+                }
+            })
+
+            output[[ids$lanes]] <- renderUI({
+                lane_total <- suppressWarnings(as.integer(input_value(ids$lane_count, 0)))
+                if (is.na(lane_total) || lane_total < 1) {
+                    return(h6("No lanes configured"))
+                }
+
+                lane_ui <- lapply(seq_len(lane_total), function(idx) {
+                    lane_name_id <- glue("{ids$tab}_lane_name_{idx}")
+                    lane_identifier_id <- glue("{ids$tab}_lane_identifier_{idx}")
+                    forward_path_id <- glue("{lane_identifier_id}_forward_path")
+                    reverse_path_id <- glue("{lane_identifier_id}_reverse_path")
+                    lane_name_value <- isolate(input[[lane_name_id]])
+                    if (is.null(lane_name_value)) {
+                        lane_name_value <- glue("L{idx}")
+                    }
+                    lane_identifier_value <- isolate(input[[lane_identifier_id]])
+                    if (is.null(lane_identifier_value)) {
+                        lane_identifier_value <- ""
+                    }
+
+                    local({
+                        lane_identifier_id_local <- lane_identifier_id
+                        forward_path_id_local <- forward_path_id
+                        reverse_path_id_local <- reverse_path_id
+
+                        output[[forward_path_id_local]] <- renderText({
+                            lane_identifier_current <- input[[lane_identifier_id_local]]
+                            if (is.null(lane_identifier_current)) {
+                                lane_identifier_current <- ""
+                            }
+                            suffix_value <- resolve_override("suffix", "suffix")
+                            forward_suffix_value <- resolve_override("forward_suffix", "forward_suffix")
+                            sample_prefix_value <- input_value(ids$prefix, "")
+                            paste0(prefix(), sample_prefix_value, lane_identifier_current, forward_suffix_value, suffix_value)
+                        })
+
+                        output[[reverse_path_id_local]] <- renderText({
+                            lane_identifier_current <- input[[lane_identifier_id_local]]
+                            if (is.null(lane_identifier_current)) {
+                                lane_identifier_current <- ""
+                            }
+                            suffix_value <- resolve_override("suffix", "suffix")
+                            reverse_suffix_value <- resolve_override("reverse_suffix", "reverse_suffix")
+                            sample_prefix_value <- input_value(ids$prefix, "")
+                            paste0(prefix(), sample_prefix_value, lane_identifier_current, reverse_suffix_value, suffix_value)
+                        })
+                    })
+
+                    div(
+                        class = "lane-entry",
+                        textInput(lane_name_id, glue("Lane {idx} name"), value = lane_name_value),
+                        textInput(lane_identifier_id, glue("Lane {idx} identifier"), value = lane_identifier_value),
+                        tags$p("Forward read path ", textOutput(forward_path_id, inline = TRUE, container = tags$code)),
+                        tags$p("Reverse read path ", textOutput(reverse_path_id, inline = TRUE, container = tags$code))
+                    )
+                })
+
+                tagList(lane_ui)
             })
 
             sample_counter(this_sample_number)
@@ -278,6 +456,9 @@ server <- function(input, output, session) {
         updateTextInput(session = session, inputId = "STARpath", value = ya$reference$STAR_index)
         updateTextInput(session = session, inputId = "GTFpath", value = ya$reference$GTF_file)
         updateTextInput(session = session, inputId = "STARparams", value = ya$reference$additional_STAR_params)
+    updateTextInput(session = session, inputId = "suffix", value = if (!is.null(ya$suffix)) ya$suffix else "")
+    updateTextInput(session = session, inputId = "forward_suffix", value = if (!is.null(ya$forward_suffix)) ya$forward_suffix else "")
+    updateTextInput(session = session, inputId = "reverse_suffix", value = if (!is.null(ya$reverse_suffix)) ya$reverse_suffix else "")
         updateNumericInput(session = session, inputId = "NUMadditionalFA", value = length(ya$reference$additional_files))
         if (length(ya$reference$additional_files) > 0) {
             for (i in 1:length(ya$reference$additional_files)) {
