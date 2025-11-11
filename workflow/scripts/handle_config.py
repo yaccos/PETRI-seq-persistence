@@ -2,15 +2,23 @@
 # Snakemake configuration file and validate its contents
 
 def process_sample(sample_contents, settings, sample_name):
-    settings["prefix"] += sample_contents.get("prefix","")
-    settings["suffix"] += sample_contents.get("suffix","")
+    settings["prefix"] += sample_contents.get("prefix", "")
+
+    suffix_value = sample_contents.get("suffix", settings.get("suffix", ""))
+    forward_suffix_value = sample_contents.get("forward_suffix", settings.get("forward_suffix_raw", ""))
+    reverse_suffix_value = sample_contents.get("reverse_suffix", settings.get("reverse_suffix_raw", ""))
+
+    settings["suffix"] = suffix_value
+    settings["forward_suffix_raw"] = forward_suffix_value
+    settings["reverse_suffix_raw"] = reverse_suffix_value
+
     if "reference_genome" in sample_contents:
-        settings["genome"] = settings["prefix"] + sample_contents["reference_genome"] + settings["suffix"]
+        settings["genome"] = sample_contents.get("prefix", "") + sample_contents["reference_genome"]
     elif "genome" not in settings:
         raise ValueError(f"No reference genome specified for sample {sample_name}")
     
     if "reference_annotation" in sample_contents:
-        settings["annotation"] = settings["prefix"] + sample_contents["reference_annotation"] + settings["suffix"]
+        settings["annotation"] = sample_contents.get("prefix", "") + sample_contents["reference_annotation"]
     elif "annotation" not in settings:
         raise ValueError(f"No reference annotation specified for sample {sample_name}")
     
@@ -37,8 +45,8 @@ def process_sample(sample_contents, settings, sample_name):
     settings["forward_prefix"] = settings["prefix"] + sample_contents.get("forward_prefix", "")
     settings["reverse_prefix"] = settings["prefix"] + sample_contents.get("reverse_prefix", "")
 
-    settings["forward_suffix"] = sample_contents.get("forward_suffix", "") + settings["suffix"]
-    settings["reverse_suffix"] = sample_contents.get("reverse_suffix", "") + settings["suffix"]
+    settings["forward_suffix"] = forward_suffix_value + suffix_value
+    settings["reverse_suffix"] = reverse_suffix_value + suffix_value
 
     lanes = sample_contents.get("lanes", {"": ""})
     if not isinstance(lanes, dict):
@@ -55,15 +63,17 @@ def process_sample(sample_contents, settings, sample_name):
 
 def config_transform(config):
     settings = {}
-    settings["prefix"] = config.get("prefix","")
+    settings["prefix"] = config.get("prefix", "")
     settings["suffix"] = config.get("suffix", "")
+    settings["forward_suffix_raw"] = config.get("forward_suffix", "")
+    settings["reverse_suffix_raw"] = config.get("reverse_suffix", "")
 
     if "streaming_chunk_size" in config:
         settings["chunk_size"] = config["streaming_chunk_size"]
     if "reference_genome" in config:
-        settings["genome"] = settings["prefix"] + config["reference_genome"] + settings["suffix"]
+        settings["genome"] = settings["prefix"] + config["reference_genome"]
     if "reference_annotation" in config:
-        settings["annotation"] = settings["prefix"] + config["reference_annotation"] + settings["suffix"]
+        settings["annotation"] = settings["prefix"] + config["reference_annotation"]
 
     for key in ["bc_cutoff", "feature_tag", "gene_id_attribute"]:
         if key in config:
