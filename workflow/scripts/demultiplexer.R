@@ -11,6 +11,10 @@ suppressMessages({
 BARCODE_WIDTH <- 7L
 ALLOWED_MISMATCHES <- 1L
 
+log_progress <- function(msg) {
+    message(glue("{date()} => {msg}"))
+}
+
 args <- commandArgs(trailingOnly = TRUE)
 
 sample  <- args[[1L]]
@@ -23,13 +27,13 @@ barcode_file_prefix <- glue("data/sc_barcodes_v2/")
 
 barcode_file_name_main <- c("BC1_5p_anchor_v2.fa", "BC2_anchored.fa", "BC3_anchored.fa")
 
-input_file <- glue("results/{sample}/{sample}_QF_merged_R1_all_lanes.fastq")
+input_file <- glue("results/{sample}/{sample}_QF_R1_all_lanes.fastq")
 
 output_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
 
 output_bc_frame  <- glue("results/{sample}/{sample}_bc_frame.rds")
 
-output_frequency_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
+output_freq_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
 
 sequence_annotation <- c(UMI = "P", "B", "A", "B", "A", "B", "A")
 
@@ -39,9 +43,9 @@ segment_lengths <- c(7L, 7L, 15L, 7L, 14L, 7L, NA_integer_)
 bc_frame$filename <- paste0(barcode_file_prefix, barcode_file_name_main)
 
 bc_frame$stringset <- map(bc_frame$filename, function(filepath) {
-    message(glue("Reading filepath {filepath}"))
+    glue("Reading filepath {filepath}")  |>  log_progress()
     raw_stringset <- Biostrings::readDNAStringSet(filepath = filepath)
-    message(glue("Trimming away adapters in barcode file"))
+    glue("Trimming away adapters in barcode file")  |> log_progress()
     # The FASTA files contain the barcodes in addition to the adapters, so we must filter them out
     Biostrings::subseq(raw_stringset, start = 1L, width = BARCODE_WIDTH)
 })
@@ -58,8 +62,9 @@ streaming_res <- rlang::exec(streaming_demultiplex, !!! callbacks,
             segments = sequence_annotation, segment_lengths = segment_lengths)
 
 freq_table  <- streaming_res$freq_table
-message("Writing frequency table...")
-data.table::fwrite(x = freq_table, file = output_frequency_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+log_progress("Writing frequency table...")
+write.table(x = freq_table, file = output_freq_table, quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+log_progress("DONE")
 cat("\n")
 print(streaming_res$summary_res)
 
