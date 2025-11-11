@@ -62,7 +62,7 @@ save_yaml_panel <- tabPanel(
     "Generate YAML",
     p(strong("Your YAML is nearly ready...")),
     textInput("savePath", "Save YAML to", value = "config.yaml"),
-    actionButton(inputId = "SaveYAML", label = "Save YAML!"),
+    actionButton(inputId = "SaveYAML", label = "Save YAML"),
     p(),
     p(strong("...or download your YAML file by clicking here:")),
     downloadButton("downloadData", "Download YAML")

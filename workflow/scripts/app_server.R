@@ -77,7 +77,14 @@ server <- function(input, output, session) {
             if (is.null(value)) {
                 return(NULL)
             }
-            trimws(as.character(value))
+            if (length(value) == 0 || all(is.na(value))) {
+                return(NULL)
+            }
+            trimmed <- trimws(as.character(value))
+            if (!nzchar(trimmed)) {
+                return(NULL)
+            }
+            trimmed
         }
 
         sample_label <- normalize_text(initial$name) %||% glue("Sample {this_sample_number}")
@@ -99,6 +106,17 @@ server <- function(input, output, session) {
             names(lane_defaults) <- lane_default_names
         }
         lane_count_default <- max(1L, length(lane_defaults))
+
+        safe_index <- function(vec, idx) {
+            if (is.null(vec) || idx < 1L || idx > length(vec)) {
+                return(NULL)
+            }
+            value <- vec[[idx]]
+            if (length(value) == 0 || all(is.na(value))) {
+                return(NULL)
+            }
+            value
+        }
 
         override_lookup <- list(
             bc_cutoff = "bc_cutoff",
@@ -462,11 +480,11 @@ server <- function(input, output, session) {
                 reverse_path_id <- glue("{lane_identifier_id}_reverse_path")
                 lane_name_value <- isolate(input[[lane_name_id]])
                 if (is.null(lane_name_value)) {
-                    lane_name_value <- lane_default_names[[idx]] %||% glue("L{idx}")
+                    lane_name_value <- safe_index(lane_default_names, idx) %||% glue("L{idx}")
                 }
                 lane_identifier_value <- isolate(input[[lane_identifier_id]])
                 if (is.null(lane_identifier_value)) {
-                    lane_identifier_value <- lane_defaults[[idx]] %||% ""
+                    lane_identifier_value <- safe_index(lane_defaults, idx) %||% ""
                 }
 
                 local({
@@ -530,8 +548,8 @@ server <- function(input, output, session) {
                         for (idx in seq_len(lane_count_local)) {
                             lane_name_id <- glue("{ids_local$tab}_lane_name_{idx}")
                             lane_identifier_id <- glue("{ids_local$tab}_lane_identifier_{idx}")
-                            lane_name_value <- lane_default_names_local[[idx]] %||% glue("L{idx}")
-                            lane_identifier_value <- lane_defaults_local[[idx]] %||% ""
+                                    lane_name_value <- safe_index(lane_default_names_local, idx) %||% glue("L{idx}")
+                                    lane_identifier_value <- safe_index(lane_defaults_local, idx) %||% ""
                             updateTextInput(session, lane_name_id, value = lane_name_value)
                             updateTextInput(session, lane_identifier_id, value = lane_identifier_value)
                         }

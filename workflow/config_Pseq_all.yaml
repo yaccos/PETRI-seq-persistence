@@ -6,7 +6,7 @@ samples:
     prefix: PseqA/PseqA_EKDN240010018-1A_
     lanes:
       L1: 223YJCLT4_L1
-      L4: H77W3DSXC_L4 
+      L4: H77W3DSXC_L4
     forward_suffix: _1
     reverse_suffix: _2
     suffix: .fq.gz
@@ -15,7 +15,7 @@ samples:
     prefix: PseqB/PseqB_EKDN240010019-1A_
     lanes:
       L1: 223WMMLT4_L1
-      L4: H77W3DSXC_L4 
+      L4: H77W3DSXC_L4
     forward_suffix: _1
     reverse_suffix: _2
     suffix: .fq.gz
@@ -24,7 +24,7 @@ samples:
     prefix: PseqC/PseqC_EKDN240010020-1A_
     lanes:
       L1: 223YJCLT4_L1
-      L2: H77W3DSXC_L2 
+      L2: H77W3DSXC_L2
     forward_suffix: _1
     reverse_suffix: _2
     suffix: .fq.gz
@@ -39,7 +39,7 @@ samples:
     suffix: .fq.gz
 
 
-reference_genome: GCF_021228175.1/GCF_021228175.1_ASM2122817v1_genomic.fna 
+reference_genome: GCF_021228175.1/GCF_021228175.1_ASM2122817v1_genomic.fna
 
 reference_annotation: GCF_021228175.1/genomic.gff
 
