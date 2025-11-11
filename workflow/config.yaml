@@ -7,7 +7,7 @@ reference_annotation: GCF_021228175.1/genomic.gff
 streaming_chunk_size: 1000000
 bc_cutoff: 14000
 feature_tag: gene
-gene_id_attribute: name
+gene_id_attribute: Name
 samples:
   PSeqA:
     prefix: PseqA/PseqA_EKDN240010018-1A_
