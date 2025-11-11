@@ -27,11 +27,8 @@ dependencies:
   - r-dbplyr
   - sra-tools
   - r-rsqlite
-<<<<<<< HEAD
   - r-readr
-=======
   - r-yaml
   - r-shinythemes
   - r-shinybs
->>>>>>> gui
 prefix: /home/japet/miniforge3/envs/petriseq
