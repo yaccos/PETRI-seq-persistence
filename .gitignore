@@ -22,4 +22,5 @@ workflow/data/GCF*
 *.dmnd
 nr.gz
 megan-map-*
+workflow/data/GSE141018/
 
