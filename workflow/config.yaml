@@ -11,9 +11,11 @@ gene_id_attribute: Name
 samples:
   Rep1:
     prefix: GSE260457/
+    bc_cutoff: 5000
     lanes:
       L1: SRR25445880
   Rep2:
     prefix: GSE260457/
+    bc_cutoff: 9000
     lanes:
       L1: SRR25445879
