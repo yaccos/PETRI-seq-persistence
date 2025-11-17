@@ -10,11 +10,10 @@ feature_tag: gene
 gene_id_attribute: Name
 samples:
   Rep1:
-    prefix: GSE260457
+    prefix: GSE260457/
     lanes:
       L1: SRR25445880
   Rep2:
-    prefix: GSE260457
+    prefix: GSE260457/
     lanes:
       L1: SRR25445879
-      
