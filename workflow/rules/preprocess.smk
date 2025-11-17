@@ -25,7 +25,7 @@ rule quality_trim:
     log:
         "logs/{sample}/QF_{lane}.log"
     shell:
-        "cutadapt -q 10,10 --minimum-length 58:14 --max-n 3 --cores={threads} --pair-filter=any -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq} > {log}"
+        "cutadapt -q 10,10 --minimum-length 58:14 --max-n 3 --cores={threads} --pair-filter=any -g NNNNNNNNAGAATACACGACGCTCTTCCGATCT -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq} > {log}"
 
 def get_lane_files_for_merging(prefix, sample, read):
     template = "{prefix}/{sample}_QF_{lane}_{read}.fastq"
