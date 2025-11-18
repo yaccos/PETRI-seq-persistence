@@ -166,7 +166,7 @@ logging.basicConfig(level=logging.INFO, format='%(message)s')
 
 summary_logger.info("")
 summary_logger.info(f"Total number of alignments processed: {alignment_count}")
-summary_logger.info(f"of which {read_count} ({round_percentage(alignment_count, read_count)}%) alignments were primary alignments of a read:")
+summary_logger.info(f"of which {read_count} ({round_percentage(alignment_count, read_count)}%) alignments were primary alignments of a read")
 summary_logger.info(f"of which {selected_count} ({round_percentage(read_count, selected_count)}%) reads were selected based on barcode frequency")
 summary_logger.info(f"of which {aligned_count} ({round_percentage(selected_count, aligned_count)}%) reads aligned to the reference genome")
 summary_logger.info(f"of which {unambiguous_count} ({round_percentage(aligned_count, unambiguous_count)}%) reads aligned unambiguously to the reference genome")
