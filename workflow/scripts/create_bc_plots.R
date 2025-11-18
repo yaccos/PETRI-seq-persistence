@@ -16,14 +16,6 @@ n_reads <- freq_table$frequency |> sum()
 
 plot_title <- glue("{sample}, n_reads={n_reads}") |> ggtitle()
 
-# figure_theme <- theme(
-#     plot.title = element_text(size = 75),
-#     axis.title = element_text(size = 75),
-#     axis.text = element_text(size = 55),
-#     strip.text = element_text(size = 55),
-#     axis.ticks = element_line(size = 3)
-# )
-
 freq_plot <- freq_plot(freq_table, cutoff = bc_cutoff |> bc_to_freq_cutoff(freq_table = freq_table), type = "density", log_scale_x = TRUE, scale_by_reads = TRUE) + plot_title + theme_bw(base_size = 35)
 knee_plot <- knee_plot(freq_table, cutoff = bc_cutoff) + plot_title + theme_bw(base_size = 35)
 
