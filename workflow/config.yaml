@@ -2,12 +2,12 @@ prefix: data/
 suffix: .fastq
 forward_suffix: _1
 reverse_suffix: _2
-reference_genome: GCF_000005845.2/GCF_000005845.2_ASM584v2_genomic.fna
-reference_annotation: GCF_000005845.2/genomic.gff
+reference_genome: U00096_JE2.fa
+reference_annotation: U00096_JE2_rRNA.gff
+feature_tag: Coding_or_RNA
+gene_id_attribute: name
 streaming_chunk_size: 200000
 bc_cutoff: 14000
-feature_tag: gene
-gene_id_attribute: Name
 samples:
   Rep1:
     prefix: GSE260457/
