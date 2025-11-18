@@ -173,5 +173,5 @@ summary_logger.info(f"of which {unambiguous_count} ({round_percentage(aligned_co
 summary_logger.info(f"of which {feature_determined} ({round_percentage(unambiguous_count, feature_determined)}%) reads did match a genomic feature")
 summary_logger.info(f"Total number of groups deduplicated: {len(cell_UMI_count)}")
 summary_logger.info(f"Total number of unique UMIs: {n_operons}")
-summary_logger.info(f"Mean number of unique UMIs per operon: {mean_operons}")
-summary_logger.info(f"Max number of unique UMIs per operon: {max_operons}")
+summary_logger.info(f"Mean number of unique UMIs per operon per cell: {mean_operons}")
+summary_logger.info(f"Max number of unique UMIs per operon per cell: {max_operons}")
