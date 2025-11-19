@@ -7,15 +7,9 @@ reference_annotation: U00096_JE2_rRNA.gff
 feature_tag: Coding_or_RNA
 gene_id_attribute: name
 streaming_chunk_size: 200000
-bc_cutoff: 14000
 samples:
-  Rep1:
+  EC_3h_deep:
     prefix: GSE260457/
     bc_cutoff: 5000
     lanes:
-      L1: SRR25445880
-  Rep2:
-    prefix: GSE260457/
-    bc_cutoff: 9000
-    lanes:
-      L1: SRR25445879
+      L1: SRR28148450
