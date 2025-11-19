@@ -10,6 +10,6 @@ streaming_chunk_size: 200000
 samples:
   EC_3h_deep:
     prefix: GSE260457/
-    bc_cutoff: 5000
+    bc_cutoff: 60000
     lanes:
       L1: SRR28148450
