@@ -2,10 +2,10 @@ prefix: data/
 suffix: .fastq
 forward_suffix: _1
 reverse_suffix: _2
-reference_genome: U00096_JE2.fa
-reference_annotation: U00096_JE2_rRNA.gff
-feature_tag: Coding_or_RNA
-gene_id_attribute: name
+reference_genome: GCF_000005845.2/GCF_000005845.2_ASM584v2_genomic.fna
+reference_annotation: GCF_000005845.2/genomic.gtf
+feature_tag: CDS  
+gene_id_attribute: gene_id
 streaming_chunk_size: 200000
 samples:
   EC_3h_deep:
