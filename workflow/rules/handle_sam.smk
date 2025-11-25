@@ -47,7 +47,7 @@ rule feature_counts:
         counts=temp("results/{sample}/{sample}.featureCounts.txt"),
         bam=temp("results/{sample}/{sample}_sorted.bam.featureCounts.bam"),
     log:
-        report="logs/{sample}/{sample}_featureCounts.log",
+        report="logs/{sample}/featureCounts.log",
         # This is really a log file
         counts_summary="logs/{sample}/{sample}.featureCounts.txt.summary",
     params:
@@ -76,7 +76,7 @@ rule count_genes:
         barcode_table="results/{sample}/{sample}_selected_barcode_table.sqlite",
     output:
         "results/{sample}/{sample}_gene_count_matrix.txt"
-    log: "logs/{sample}/{sample}_count_genes.log"
+    log: "logs/{sample}/count_genes.log"
     threads: workflow.cores
     params:
         # This is not the streaming chunk size and is therefore optimized differently

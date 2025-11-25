@@ -143,6 +143,7 @@ logging.info(f"Preparing results")
 
 res_frame = pd.DataFrame.from_records(res_list, columns=["Cell Barcode","contig_gene","count"])
 
+# Note: The genomic features may be on the gene, not operon level, but we keep this naming for historical reasons
 n_operons = res_frame["count"].sum()
 mean_operons = res_frame["count"].mean()
 max_operons = res_frame["count"].max()
