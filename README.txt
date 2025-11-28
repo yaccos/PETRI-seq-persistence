@@ -1,21 +1,20 @@
-Created by Sydney Blattman
-Last updated: 8/18/2024
+Created by Sydney Blattman, modernized by Jakob Peder Pettersen
+Last updated: 28/11/2025
 
 Dependencies:
-python 2.7.17
-fastqc (v0.11.9)
-cutadapt (v1.18) [up to v2.10 should work]
-seqkit v2.8.2
-GNU parallel (20190522)
-UMI-tools (v0.5.5)
-featureCounts (v1.6.3)
-bwa (0.7.17-r1198-dirty)
+python 3.12.12
+fastqc (v0.12.1)
+cutadapt (v5.2)
+seqkit v2.11.0
+GNU parallel (20251122)
+UMI-tools (v1.1.6)
+subread (v2.1.1, contains featureCounts)
+bwa (0.7.19)
 samtools 1.7
-PEAR (0.9.11) [note we have only been able to install PEAR on linux not mac]
-multiprocessing (0.70a1 for python2)
-pandas (0.24.2 for python2)
-matplotlib (2.2.4 for python2)
-numpy (1.16.2 for python2)
+PEAR (0.9.6) [note we have only been able to install PEAR on linux not mac]
+pandas (2.3.3)
+matplotlib (3.10.8)
+numpy (2.3.5)
 
 Pipeline:
 Example commands can be run from demo folder

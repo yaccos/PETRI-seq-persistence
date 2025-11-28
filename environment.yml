@@ -1,0 +1,19 @@
+name: blattman-petriseq
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python
+  - cutadapt
+  - fastqc
+  - umi_tools
+  - subread
+  - bwa
+  - pandas
+  - numpy
+  - pear
+  - seqkit
+  - matplotlib
+  - parallel
+  - samtools
+prefix: /home/japet/miniforge3/envs/blattman-petriseq
