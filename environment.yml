@@ -16,4 +16,5 @@ dependencies:
   - matplotlib
   - parallel
   - samtools
+  - time
 prefix: /home/japet/miniforge3/envs/blattman-petriseq
