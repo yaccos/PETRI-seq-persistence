@@ -31,4 +31,4 @@ dependencies:
   - r-yaml
   - r-shinythemes
   - r-shinybs
-prefix: /home/japet/miniforge3/envs/petriseq
+  
