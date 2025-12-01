@@ -5,6 +5,7 @@
 *.Rproj
 .vscode/
 workflow/scripts/__pycache__
+scripts/__pycache__
 *.swp
 *fa.sa
 *fa.pac
@@ -12,8 +13,8 @@ workflow/scripts/__pycache__
 *fa.ann
 *fa.amb
 *.pyc
-workflow/.snakemake
-workflow/results
-workflow/logs
+results
+logs
 benchmark
+.snakemake
 

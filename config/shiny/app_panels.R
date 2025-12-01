@@ -3,7 +3,7 @@ general_option_panel <- tabPanel(
     fluidRow(
         column(6, wellPanel(
             h4("Data and file input"),
-            textInput("prefix", "Directory of input data", value = "data/"),
+            textInput("prefix", "Directory of input data", value = "resources/"),
             textInput("reference_genome", "Reference genome for alignment"),
             textOutput("path_reference_genome") |> h6(),
             textInput("reference_annotation", "Annotation GTF file"),
@@ -61,7 +61,7 @@ load_yaml_panel <- tabPanel(
 save_yaml_panel <- tabPanel(
     "Generate YAML",
     p(strong("Your YAML is nearly ready...")),
-    textInput("savePath", "Save YAML to", value = "config.yaml"),
+    textInput("savePath", "Save YAML to", value = "config/config.yaml"),
     actionButton(inputId = "SaveYAML", label = "Save YAML"),
     p(),
     p(strong("...or download your YAML file by clicking here:")),

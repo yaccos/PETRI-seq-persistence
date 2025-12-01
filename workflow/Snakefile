@@ -1,16 +1,21 @@
-# script_dir = f"{os.path.dirname(os.path.abspath(__file__))}/../scripts"
-import os
+# Configure paths relative to the repository root.
 import pathlib
+from pathlib import Path
 
-script_dir = "scripts"
+BASE_DIR = Path(workflow.basedir).resolve()
+REPO_ROOT = BASE_DIR.parent
+
+workdir: str(REPO_ROOT)
+
+script_dir = str(BASE_DIR / "scripts")
 import scripts.handle_config as handle_config
-configfile: "config.yaml"
+configfile: str(REPO_ROOT / "config" / "config.yaml")
 
 # report: "report/workflow.rst"
 
 processed_config = handle_config.config_transform(config)
 
-barcode_dir = f"data/sc_barcodes_v2"
+barcode_dir = str(REPO_ROOT / "resources" / "sc_barcodes_v2")
 
 sample_names = list(processed_config.keys())
 
@@ -85,7 +90,7 @@ In a graphical interactive R session, use read.table() with header=TRUE
 to read the frequency table(s) one by one.
 Run the Shiny app posDemux::interactive_bc_cutoff() on each of these frequency tables
 and determine a suitable cutoff.
-Finally, provide the determined values in config.yaml"
+Finally, provide the determined values in config/config.yaml"
         """
 
 

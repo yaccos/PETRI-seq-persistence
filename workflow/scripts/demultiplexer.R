@@ -23,7 +23,7 @@ chunk_size <- args[[2L]] |> as.integer()
 
 bc_frame <- tibble(bc_name = glue("bc{1:3}"))
 
-barcode_file_prefix <- glue("data/sc_barcodes_v2/")
+barcode_file_prefix <- glue("resources/sc_barcodes_v2/")
 
 barcode_file_name_main <- c("BC1_5p_anchor_v2.fa", "BC2_anchored.fa", "BC3_anchored.fa")
 
