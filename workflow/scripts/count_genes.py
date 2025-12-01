@@ -2,7 +2,7 @@ import pysam
 import pandas as pd
 import sys
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 import umi_tools
 import multiprocessing
 import logging
@@ -71,11 +71,21 @@ def count_umis(umi_dict: Dict[bytes, int]):
     clustered_umis = clusterer(umi_dict, threshold=1)
     return len(clustered_umis)
 
+
+
 def create_count_record(dict_pair: Tuple[BarcodeGene, Dict[bytes, int]]):
     barcode_info, umi_dict = dict_pair
+    def prepare_cluster_info(cluster):
+        cluster_representative = cluster[0]
+        cluster_count = 0
+        for umi in cluster:
+            cluster_count += umi_dict[umi]
+        return (cluster_representative, cluster_count)
     contig_gene = f"{barcode_info.contig}:{barcode_info.gene}"
-    count = count_umis(umi_dict)
-    return (barcode_info.barcode, contig_gene, count)
+    clusterer = umi_tools.UMIClusterer(cluster_method="directional")
+    clustered_umis: List[List[bytes]] = clusterer(umi_dict, threshold=1)
+    cluster_info = [prepare_cluster_info(cluster) for cluster in clustered_umis]
+    return (barcode_info.barcode, contig_gene, cluster_info)
 
 
 threshold = int(sys.argv[1])
@@ -141,7 +151,15 @@ with multiprocessing.Pool(n_cores) as p:
 
 logging.info(f"Preparing results")
 
-res_frame = pd.DataFrame.from_records(res_list, columns=["Cell Barcode","contig_gene","count"])
+with open(f"results/{sample}/{sample}_umi_count_table.txt", "w") as umi_file:
+    umi_file.write("Cell Barcode\tUMI\tcontig:gene\ttotal_reads\n")
+    for umi_group in res_list:
+        cell_barcode, contig_gene, umi_info = umi_group
+        for umi_record in umi_info:
+            umi, count = umi_record
+            umi_file.write(f"{cell_barcode}\t{umi.decode()}\t{contig_gene}\t{count}\n")
+
+res_frame = pd.DataFrame.from_records(((res[0], res[1], len(res[2])) for res in res_list), columns=["Cell Barcode","contig_gene","count"])
 
 # Note: The genomic features may be on the gene, not operon level, but we keep this naming for historical reasons
 n_operons = res_frame["count"].sum()

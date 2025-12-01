@@ -58,6 +58,7 @@ def get_fastqc_input(sample, filename):
 
 fastqc_output = [expand_fastqc(sample) for sample in sample_names]
 gene_matrix_output = expand("results/{sample}/{sample}_gene_count_matrix.txt", sample=sample_names)
+umi_table_output = expand("results/{sample}/{sample}_umi_count_table.txt", sample=sample_names)
 
 
 knee_plot = expand("results/{sample}/{sample}_kneePlot.pdf", sample = sample_names)
@@ -94,3 +95,4 @@ rule all:
         knee_plot,
         histogram,
         gene_matrix_output,
+        umi_table_output

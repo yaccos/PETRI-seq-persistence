@@ -75,7 +75,8 @@ rule count_genes:
         bai="results/{sample}/{sample}_sorted.bam.featureCounts.bam.bai",
         barcode_table="results/{sample}/{sample}_selected_barcode_table.sqlite",
     output:
-        "results/{sample}/{sample}_gene_count_matrix.txt"
+        "results/{sample}/{sample}_gene_count_matrix.txt",
+        "results/{sample}/{sample}_umi_count_table.txt"
     log: "logs/{sample}/count_genes.log"
     threads: workflow.cores
     params:
