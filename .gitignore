@@ -15,3 +15,5 @@ workflow/scripts/__pycache__
 workflow/.snakemake
 workflow/results
 workflow/logs
+benchmark
+
