@@ -36,6 +36,6 @@ How to run the benchmark:
  SRR28148450_1.fastq and SRR28148450_2.fastq in benchmark/EC_3h_deep
 3. Navigate to the benchmark directory
 4. If using conda, run: conda activate blattman-petriseq
-5. Run the benchmark, starting the benchmark by running: command time -o benchmark_timing.log ./run_benchmark.sh
+5. Run the benchmark, starting the benchmark by running: command time -v -o benchmark_timing.log ./run_benchmark.sh
 6. The benchmark timings should be available as benchmark_timing.log, the gene count table as EC_3h_deep_v11_threshold_0_mixed_species_gene_matrix.txt, and the
  UMI summary table as EC_3h_deep_v11_threshold_0_filtered_mapped_UMIs.txt
