@@ -1,21 +1,14 @@
 # Configure paths relative to the repository root.
+import os.path
 import pathlib
 from pathlib import Path
 
-BASE_DIR = Path(workflow.basedir).resolve()
-REPO_ROOT = BASE_DIR.parent
-
-workdir: str(REPO_ROOT)
-
-script_dir = str(BASE_DIR / "scripts")
 import scripts.handle_config as handle_config
-configfile: str(REPO_ROOT / "config" / "config.yaml")
-
-# report: "report/workflow.rst"
+configfile: os.path.join("config", "config.yaml")
 
 processed_config = handle_config.config_transform(config)
 
-barcode_dir = str(REPO_ROOT / "resources" / "sc_barcodes_v2")
+barcode_dir = os.path.join("resources", "sc_barcodes_v2")
 
 sample_names = list(processed_config.keys())
 

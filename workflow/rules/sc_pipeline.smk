@@ -13,7 +13,7 @@ rule demultiplex:
     log:
         "logs/{sample}/demultiplex.log"
     shell:
-        "Rscript \"{script_dir}/demultiplexer.R\" {wildcards.sample} {params.chunk_size} &> {log}"
+        "Rscript workflow/scripts/demultiplexer.R {wildcards.sample} {params.chunk_size} &> {log}"
 
 rule create_bc_plots:
     input:
@@ -26,7 +26,7 @@ rule create_bc_plots:
     log:
         "logs/{sample}/bc_plots.log"
     shell:
-        "Rscript \"{script_dir}/create_bc_plots.R\" {wildcards.sample} {params.bc_cutoff} &> {log}"
+        "Rscript workflow/scripts/create_bc_plots.R {wildcards.sample} {params.bc_cutoff} &> {log}"
 
 
 rule select_reads:
@@ -42,5 +42,5 @@ rule select_reads:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"],
         chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
     shell:
-        "Rscript \"{script_dir}/select_reads_to_keep.R\" {wildcards.sample} {params.bc_cutoff} {params.chunk_size} &> {log}"
+        "Rscript workflow/scripts/select_reads_to_keep.R {wildcards.sample} {params.bc_cutoff} {params.chunk_size} &> {log}"
         

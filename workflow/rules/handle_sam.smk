@@ -84,4 +84,4 @@ rule count_genes:
         # Only modify this one if you know what you are doing
         chunk_size=10
     shell:
-        "python \"{script_dir}/count_genes.py\" 0 {wildcards.sample} {threads} {params.chunk_size} 2> {log}"
+        "python workflow/scripts/count_genes.py 0 {wildcards.sample} {threads} {params.chunk_size} 2> {log}"
