@@ -30,12 +30,13 @@ rule sam_to_bam_sort:
 # Index BAM
 rule index_bam:
     input:
-        "results/{sample}/{sample}_sorted_{lane}.bam",
+        "{filename}.bam",
     output:
-        temp("results/{sample}/{sample}_sorted__{lane}.bam.bai"),
+        temp("{filename}.bam.bai"),
     shell:
         "samtools index {input}"
 
+ruleorder: feature_counts > sam_to_bam_sort
 
 # Run featureCounts
 rule feature_counts:
@@ -60,14 +61,6 @@ rule feature_counts:
         """
 
 
-# Index featureCounts BAM
-rule index_fc_bam:
-    input:
-        "results/{sample}/{sample}_sorted_{lane}.bam.featureCounts.bam",
-    output:
-        temp("results/{sample}/{sample}_sorted_{lane}.bam.featureCounts.bam.bai"),
-    shell:
-        "samtools index {input}"
 
 def get_bam_files_for_sample(wildcards):
     sample = wildcards.sample
@@ -77,7 +70,7 @@ def get_bam_files_for_sample(wildcards):
 def get_bai_files_for_sample(wildcards):
     sample = wildcards.sample
     lanes = sample_lanes[sample]
-    return [f"results/{sample}/{sample}_sorted_{lane}.bam.featureCounts.bai" for lane in lanes]
+    return [f"results/{sample}/{sample}_sorted_{lane}.bam.featureCounts.bam.bai" for lane in lanes]
 
 rule count_genes:
     input:
@@ -92,6 +85,8 @@ rule count_genes:
     params:
         # This is not the streaming chunk size and is therefore optimized differently
         # Only modify this one if you know what you are doing
-        chunk_size=10
-    shell:
-        "python workflow/scripts/count_genes.py 0 {wildcards.sample} {threads} {params.chunk_size} 2> {log}"
+        chunk_size=10,
+        threshold=0,
+        iteration_gap=int(1e6)
+    script:
+        "../scripts/count_genes.py"
