@@ -29,10 +29,16 @@ def get_fastqc_input(sample, filename):
                 return path
     raise ValueError("FastQC input file not found")
 
+def expand_QF_files(sample):
+    return [f"results/{sample}/{sample}_QF_{lane}_R2.fastq" for sample in sample_names for lane in sample_lanes[sample]]
+
+
+def expand_sample(sample, file):
+    return expand("results/{sample}/{sample}_{file}", sample=sample_names, file=file)
+
 def intermediate_files():
     samples = processed_config.keys()
     templates = ["results/{sample}/{sample}_barcode_table.txt", "results/{sample}/{sample}_bc_frame.rds",
-     "results/{sample}/{sample}_frequency_table.txt", "results/{sample}/{sample}_QF_R2_all_lanes.fastq"]
+     "results/{sample}/{sample}_frequency_table.txt"]
     files = [expand(template, sample=samples) for template in templates]
     return files
-    

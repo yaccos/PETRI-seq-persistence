@@ -15,13 +15,13 @@ get_bwa_index = lambda wildcards: multiext(processed_config[wildcards.sample]["g
 # BWA alignment
 rule bwa_align:
     input: 
-        reads="results/{sample}/{sample}_QF_R2_all_lanes.fastq",
+        reads="results/{sample}/{sample}_QF_{lane}_R2.fastq",
         genome=lambda wildcards: processed_config[wildcards.sample]["genome"],
         index=get_bwa_index
     output:
-        temp("results/{sample}/{sample}_bwa.sam"),
+        temp("results/{sample}/{sample}_bwa_{lane}.sam"),
     log:
-        "logs/{sample}/bwa_mem.log"
+        "logs/{sample}/bwa_mem_{lane}.log"
     threads:
         # Ensures there is a core left to do demultiplexing
         max(1, workflow.cores - 1)
