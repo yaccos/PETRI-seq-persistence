@@ -7,6 +7,8 @@ rule bwa_index:
         temp(multiext("resources/{genome}", *bwa_index_extensions)),
     log:
         "logs/{genome}_index.log"
+    conda:
+        "../envs/bwa.yml"
     shell:
         "bwa index {input} 2> {log}"
 
@@ -25,5 +27,7 @@ rule bwa_align:
     threads:
         # Ensures there is a core left to do demultiplexing
         max(1, workflow.cores - 1)
+    conda:
+        "../envs/bwa.yml"
     shell:
         "bwa mem -a -k 19 -Y -t {threads} {input.genome}  {input.reads} > {output} 2> {log}"

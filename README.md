@@ -6,7 +6,7 @@ This is a Snakemake pipeline for the secondary computational analysis of single 
 
 # Dependencies
 
-This pipeline is only tested under Linux running on x86-64 architecture, although it might work on macOS and other CPU architectures. The workflow will complain, but still work if the system dependency `fuse2fs` is not installed. The `posDemux` R package (https://github.com/yaccos/posDemux) is a keystone dependency of this workflow. This package is scheduled to be released as part of  For the pipeline itself, the package is available as an image on 
+This pipeline is only tested under Linux running on x86-64 architecture, although it might work on macOS and other CPU architectures. The workflow will complain, but still work if the system dependency `fuse2fs` is not installed. The `posDemux` R package (https://github.com/yaccos/posDemux) is a keystone dependency of this workflow. This package is scheduled to be released as part of Bioconductor 3.23  For the pipeline itself, the package is available as an image on 
 
  For using the cutoff selection tools,
 
@@ -29,8 +29,8 @@ These warnings can be safely ignored, but if you still want to silence them, run
 # Running the pipeline
 
 When the barcode threshold to use is unknown, we only need to run the pipeline to the end of the demultiplexer. In that case, run
-`snakemake --software-deployment-method apptainer --cores <NUMBER_OF_CORES> determine_bc_cutoff`.
+`snakemake --software-deployment-method apptainer conda --cores <NUMBER_OF_CORES> determine_bc_cutoff`.
 
 Then use the posDemux package to run the interactive cutoff selection tool on the file `results/<sample>/<sample>_barcode_table.txt`.
 
-`snakemake --software-deployment-method apptainer --cores <NUMBER_OF_CORES> all`
+`snakemake --software-deployment-method apptainer conda --cores <NUMBER_OF_CORES> all`

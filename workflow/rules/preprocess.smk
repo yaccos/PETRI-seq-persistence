@@ -8,6 +8,8 @@ rule fastqc:
         ),
     log:
         "logs/{sample}/qc/{filename}_fastqc.log"
+    conda:
+        "../envs/fastqc.yml"
     shell:
         "fastqc {input} -o results/{wildcards.sample}/qc 2> {log}"
 
@@ -24,6 +26,8 @@ rule quality_trim:
     threads: min(3, workflow.cores)
     log:
         "logs/{sample}/QF_{lane}.log"
+    conda:
+        "../envs/cutadapt.yml"
     shell:
         "cutadapt -q 10,10 --minimum-length 58:14 --max-n 3 --cores={threads} --pair-filter=any -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq} > {log}"
 

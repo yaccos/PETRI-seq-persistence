@@ -4,19 +4,9 @@ channels:
   - bioconda
 dependencies:
   - apptainer
-  - fastqc
-  - cutadapt
-  - umi_tools
-  - subread
-  - bwa
-  - pandas
-  - samtools
-  - ipython
   - snakemake
   - snakefmt
-  - bioconductor-biostrings
   - r-shiny
-  - sra-tools
   - r-yaml
   - r-shinythemes
   - r-shinybs

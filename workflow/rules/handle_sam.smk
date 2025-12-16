@@ -14,6 +14,8 @@ rule sam_to_bam:
         "results/{sample}/{sample}_no_XS_{lane}.sam",
     output:
         temp("results/{sample}/{sample}_no_XS_{lane}.bam"),
+    conda: 
+        "../envs/samtools.yml"
     shell:
         "samtools view -bS --uncompressed {input} -o {output}"
 
@@ -23,6 +25,8 @@ rule sam_to_bam_sort:
         "results/{sample}/{sample}_no_XS_{lane}.bam",
     output:
         temp("results/{sample}/{sample}_sorted_{lane}.bam"),
+    conda: 
+        "../envs/samtools.yml"
     shell:
         "samtools sort -u {input} -o {output}"
 
@@ -33,6 +37,8 @@ rule index_bam:
         "{filename}.bam",
     output:
         temp("{filename}.bam.bai"),
+    conda: 
+        "../envs/samtools.yml"
     shell:
         "samtools index {input}"
 
@@ -54,6 +60,8 @@ rule feature_counts:
     params:
         feature_tag=lambda wildcards: processed_config[wildcards.sample]["feature_tag"],
         gene_id_attribute=lambda wildcards: processed_config[wildcards.sample]["gene_id_attribute"]
+    conda:
+        "../envs/feature_counts.yml"
     shell:
         """
         featureCounts -t '{params.feature_tag}' -g {params.gene_id_attribute} -s 1 -a {input.gff} -o {output.counts} -R BAM {input.bam} 2> {log.report}
@@ -88,5 +96,7 @@ rule count_genes:
         chunk_size=10,
         threshold=0,
         iteration_gap=int(1e6)
+    conda:
+        "../envs/count_genes.yml"
     script:
         "../scripts/count_genes.py"
