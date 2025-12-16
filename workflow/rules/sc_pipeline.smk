@@ -51,6 +51,8 @@ rule select_reads:
     params:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"],
         chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
+    container:
+        "docker://yaccos/posdemux:0.99.8"
     script:
         "../scripts/select_reads_to_keep.R"
         
