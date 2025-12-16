@@ -3,6 +3,8 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  - apptainer
+  - fuse2fs
   - fastqc
   - cutadapt
   - umi_tools
@@ -22,7 +24,6 @@ dependencies:
   - r-shiny
   - r-dt
   - bioconductor-shortread
-  - r-data.table
   - r-chunked
   - r-dbplyr
   - sra-tools

@@ -1,3 +1,7 @@
+log_file = snakemake@log[[1]]
+log_handle  <- file(log_file, open = "w")
+sink(log_handle, append = TRUE, type = "output")
+sink(log_handle, append = TRUE, type = "message")
 suppressMessages({
     library(Biostrings)
     library(purrr)
@@ -11,25 +15,17 @@ log_progress <- function(msg) {
     message(glue("{date()} => {msg}"))
 }
 
-args <- commandArgs(trailingOnly = TRUE)
-
-sample  <- args[[1L]]
-
-# sample  <- "random20000"
-
-# bc_cutoff <- 7000L
-
-bc_cutoff  <- as.integer(args[[2L]])
-chunk_size  <- as.integer(args[[3L]])
+bc_cutoff  <- snakemake@params[["bc_cutoff"]]
+chunk_size  <- snakemake@params[["chunk_size"]]
 bc_names  <- glue("bc{1:3}")
-input_freq_table  <- glue("results/{sample}/{sample}_frequency_table.txt")
-input_table_file <- glue("results/{sample}/{sample}_barcode_table.txt")
+input_freq_table  <- snakemake@input[["freq_table"]]
+input_table_file <- snakemake@input[["barcode_table"]]
 
 log_progress("Reading frequency table")
 freq_table <- read.table(file = input_freq_table, header = TRUE, row.names = NULL, sep = "\t")
 selected_freq_table <- freq_table[seq_len(min(bc_cutoff, nrow(freq_table))),]
 
-output_database_name <- glue("results/{sample}/{sample}_selected_barcode_table.sqlite")
+output_database_name <- snakemake@output[["barcode_database"]]
 log_progress("Initializing output barcode database stream")
 output_db <- dbConnect(RSQLite::SQLite(), output_database_name)
 on.exit(dbDisconnect(output_db), add = TRUE)
@@ -49,7 +45,7 @@ dbExecute(output_db, "CREATE INDEX idx ON selected_barcodes(read)") |> invisible
 
 log_progress("Writing processed frequency table")
 write.table(
-    x = selected_freq_table, file = "results/{sample}/{sample}_selected_frequency_table.txt" |> glue(),
+    x = selected_freq_table, file = snakemake@output[["selected_barcode_table"]],
     sep = "\t", quote = FALSE, row.names = FALSE,
     col.names = TRUE
 )
@@ -60,3 +56,7 @@ n_read  <- freq_table$frequency |> sum()
 n_selected <- selected_freq_table$frequency |> sum()
 selection_percentage <- n_selected / n_read*100
 glue("Selected {n_selected} of {n_read} reads ({round(selection_percentage, 2L)}%) based on barcode frequency")
+
+sink(type="message")
+sink(type="output")
+close(log_handle)
