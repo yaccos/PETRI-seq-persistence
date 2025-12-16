@@ -6,5 +6,3 @@ This is a Snakemake pipeline for the secondary computational analysis of single 
 
 # Dependencies
 
-
-
