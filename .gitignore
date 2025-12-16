@@ -17,4 +17,5 @@ results
 logs
 benchmark
 .snakemake
+*.sif
 
