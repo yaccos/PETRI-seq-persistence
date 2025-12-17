@@ -1,11 +1,8 @@
-name: petrisnake
+name: petrisnake-config
 channels:
   - conda-forge
   - bioconda
 dependencies:
-  - apptainer
-  - snakemake
-  - snakefmt
   - r-shiny
   - r-yaml
   - r-shinythemes

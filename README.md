@@ -19,7 +19,7 @@ The configuration tool GUI is a R Shiny application with the following dependenc
 * purrr (1.2.0)
 * yaml (2.3.12)
 
-For convenience, the file `environment.yml` describes the conda dependencies for both Snakemake and the configuration GUI. In order to install it, run `conda env create --file environment.yml`. This should create a conda environment named `petrisnake` with the required dependencies.
+For convenience, the file `config/environment.yml` describes the conda dependencies for the configuration GUI. In order to install it, run `conda env create --file config/environment.yml`. This should create a conda environment named `petrisnake-config` with the required dependencies.
 
 
 The `posDemux` R package (https://github.com/yaccos/posDemux) is a keystone dependency of this workflow. This package is scheduled to be released as part of Bioconductor 3.23  For the pipeline itself, the package is available as an image Docker Hub (https://hub.docker.com/repository/docker/yaccos/posdemux/general) and is automatically used by Snakemake in the workflow provided that the argument `--software-deployment-method apptainer` is used.
@@ -62,7 +62,8 @@ Then use the posDemux package to run the interactive cutoff selection tool on th
 
 # Details of the pipeline steps
 
-When running `determine_bc_cutoff`, three rules are run, `quality_trim` and `demultiplex`, and `fastqc`. 
+## `determine_bc_cutoff`
+When running `determine_bc_cutoff`, three rules are run, `quality_trim` and `demultiplex`, and `fastqc`.
 
 ## `fastqc`
 Completly separately from the other jobs `fastqc` is run on all input files, the results of which are found in `results/<sample>/qc`.
@@ -72,3 +73,12 @@ Completly separately from the other jobs `fastqc` is run on all input files, the
 
 ## `demultiplex`
 In this step the `posDemux` package demultiplexes the forward reads for each sample. If the sample has multiple lanes, the demultiplexer sequentially streams all the lane files in the same rule invokation.
+
+## `all`
+
+The rule `all` is only supposed to be run after the barcode threshold is set in the config file. This rules completes the pipeline. If the results from `determine_bc_cutoff` exists they will be used, otherwise all rules are carried out.
+
+## `bwa_index`
+Prepares the reference genome for alignment by indexing the genome. This rule in invoked once per reference genome and the index files are created in the same directory as the reference genome.
+
+## `bwa_align`
