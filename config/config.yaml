@@ -6,6 +6,7 @@ reference_genome: GCF_000005845.2/GCF_000005845.2_ASM584v2_genomic.fna
 reference_annotation: GCF_000005845.2/genomic.gtf
 feature_tag: CDS  
 gene_id_attribute: gene_id
+chunk_size: 200000
 samples:
   EC_3h_deep:
     prefix: GSE260457/
