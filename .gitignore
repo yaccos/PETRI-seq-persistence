@@ -16,6 +16,7 @@ scripts/__pycache__
 resources/Pseq*
 resources/GCA*
 resources/GCF*
+resources/GSE260457
 *.html
 *.dmnd
 nr.gz
