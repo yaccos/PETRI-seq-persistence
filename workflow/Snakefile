@@ -1,18 +1,25 @@
-# script_dir = f"{os.path.dirname(os.path.abspath(__file__))}/../scripts"
-import os
+# Configure paths relative to the repository root.
+import os.path
 import pathlib
+from pathlib import Path
 
-script_dir = "scripts"
-import scripts.handle_config as handle_config
-configfile: "config.yaml"
+# This must be declared before the imports to work
+barcode_dir = os.path.join("resources", "sc_barcodes_v2")
 
-# report: "report/workflow.rst"
+include: "rules/handle_config.smk"
+include: "rules/common.smk"
+include: "rules/preprocess.smk"
+include: "rules/sc_pipeline.smk"
+include: "rules/align.smk"
+include: "rules/handle_sam.smk"
 
-processed_config = handle_config.config_transform(config)
+configfile: os.path.join("config", "config.yaml")
 
-barcode_dir = f"data/sc_barcodes_v2"
+processed_config = config_transform(config)
+
 
 sample_names = list(processed_config.keys())
+sample_lanes = {sample: processed_config[sample]["fastq"].keys() for sample in sample_names}
 
 # Add this at the top of the file, before any rules
 wildcard_constraints:
@@ -20,61 +27,31 @@ wildcard_constraints:
     read="R[12]"
 
 
-include: "rules/preprocess.smk"
-include: "rules/sc_pipeline.smk"
-include: "rules/align.smk"
-include: "rules/handle_sam.smk"
-
-def get_input(sample, lane, read):
-    sample_config = processed_config[sample]['fastq']
-    return sample_config[lane][0 if read == "R1" else 1]
-
-def get_path_stem(path: str):
-    # In case we get compressed files, they often have double extensions,
-    # so we remove the final .gz in that case. Otherwise, only the final extension is removed
-    uncompressed_path = path.removesuffix(".gz")
-    stem = pathlib.Path(uncompressed_path).stem
-    return stem
-
-def expand_fastqc(sample):
-    sample_config = processed_config[sample]
-    template = "results/{sample}/qc/{filename}_fastqc.{format}"
-    input_lanes = sample_config["fastq"].values()
-    input_filestems = [get_path_stem(filename) for lane in input_lanes for filename in lane]
-    return expand(
-    template,
-    sample=sample,
-    filename=input_filestems,
-    format=["html", "zip"],
-    )
-
-def get_fastqc_input(sample, filename):
-    sample_config = processed_config[sample]
-    for lane_files in sample_config["fastq"].values():
-        for path in lane_files:
-            if get_path_stem(path) == filename:
-                return path
-    raise ValueError("FastQC input file not found")
-
 fastqc_output = [expand_fastqc(sample) for sample in sample_names]
-gene_matrix_output = expand("results/{sample}/{sample}_gene_count_matrix.txt", sample=sample_names)
+
+gene_matrix_output = expand_sample(sample_names, "gene_count_matrix.txt")
+umi_table_output = expand_sample(sample_names, "umi_count_table.txt")
+bc_table_output = expand_sample(sample_names, "barcode_table.txt")
+bc_rds_output = expand_sample(sample_names, "bc_frame.rds")
+freq_table_output = expand_sample(sample_names, "frequency_table.txt")
+R2_cleaned_data = [f"results/{sample}/{sample}_QF_{lane}_R2.fastq" for sample in sample_names for lane in sample_lanes[sample]]
+
 
 
 knee_plot = expand("results/{sample}/{sample}_kneePlot.pdf", sample = sample_names)
 histogram = expand("results/{sample}/{sample}_ReadsPerBC.pdf", sample = sample_names)
 
-def intermediate_files():
-    samples = processed_config.keys()
-    templates = ["results/{sample}/{sample}_barcode_table.txt", "results/{sample}/{sample}_bc_frame.rds",
-     "results/{sample}/{sample}_frequency_table.txt", "results/{sample}/{sample}_QF_R2_all_lanes.fastq"]
-    files = [expand(template, sample=samples) for template in templates]
-    return files
 
-
+# The logic here is that once R1 sequences are used for demultiplexing, they are not longer needed and can be discarded
+# before breaking out of the pipeline to determine the BC cutoff
+# R2 sequences on the other hand are used past the determination of the BC cutoff and must therefore be perserved for this purpose
 rule determine_bc_cutoff:
     input:
        fastqc_output,
-       intermediate_files(),
+       bc_table_output,
+       bc_rds_output,
+       freq_table_output,
+       R2_cleaned_data,
     shell:
         """
         echo "In order to determine cutoff values, do the following:
@@ -84,7 +61,7 @@ In a graphical interactive R session, use read.table() with header=TRUE
 to read the frequency table(s) one by one.
 Run the Shiny app posDemux::interactive_bc_cutoff() on each of these frequency tables
 and determine a suitable cutoff.
-Finally, provide the determined values in config.yaml"
+Finally, provide the determined values in config/config.yaml"
         """
 
 
@@ -94,3 +71,4 @@ rule all:
         knee_plot,
         histogram,
         gene_matrix_output,
+        umi_table_output

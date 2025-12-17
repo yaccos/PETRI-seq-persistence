@@ -1,12 +1,18 @@
 import pysam
 import pandas as pd
-import sys
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 import umi_tools
 import multiprocessing
 import logging
 import sqlite3
+import sys
+from snakemake.script import snakemake
+
+log_file = snakemake.log[0]
+log_handle  = open(log_file, "w")
+sys.stdout = log_handle
+sys.stderr = log_handle
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 summary_logger = logging.getLogger("count_genes.summary")
@@ -71,26 +77,39 @@ def count_umis(umi_dict: Dict[bytes, int]):
     clustered_umis = clusterer(umi_dict, threshold=1)
     return len(clustered_umis)
 
+
+
 def create_count_record(dict_pair: Tuple[BarcodeGene, Dict[bytes, int]]):
     barcode_info, umi_dict = dict_pair
+    group_count = 0
+    def prepare_cluster_info(cluster):
+        cluster_representative = cluster[0]
+        cluster_count = 0
+        for umi in cluster:
+            cluster_count += umi_dict[umi]
+        cluster_string = f"{cell_barcode}\t{cluster_representative.decode()}\t{contig_gene}\t{cluster_count}\n"
+        return cluster_string, cluster_count
     contig_gene = f"{barcode_info.contig}:{barcode_info.gene}"
-    count = count_umis(umi_dict)
-    return (barcode_info.barcode, contig_gene, count)
+    clusterer = umi_tools.UMIClusterer(cluster_method="directional")
+    clustered_umis: List[List[bytes]] = clusterer(umi_dict, threshold=1)
+    cluster_info = [prepare_cluster_info(cluster) for cluster in clustered_umis]
+    aggregated_cluster_string = "".join([x[0] for x in cluster_info])
+    group_count = sum(x[1] for x in cluster_info)
+    return (barcode_info.barcode, contig_gene, group_count, aggregated_cluster_string)
 
 
-threshold = int(sys.argv[1])
-sample = sys.argv[2]
-n_cores = int(sys.argv[3])
-chunk_size = int(sys.argv[4])
-barcode_table_file = f"results/{sample}/{sample}_selected_barcode_table.sqlite"
+threshold = snakemake.params["threshold"]
+sample = snakemake.wildcards["sample"]
+n_cores = snakemake.threads
+chunk_size = snakemake.params["chunk_size"]
+barcode_table_file = snakemake.input["barcode_table"]
 logging.info("Opening barcode database")
 barcode_table = prepare_barcode_table(barcode_table_file)
 barcode_con, fetch_barcode = prepare_barcode_table(barcode_table_file)
-bam_file_path = f"results/{sample}/{sample}_sorted.bam.featureCounts.bam"
-bamfile = pysam.AlignmentFile(bam_file_path, "rb")
+bam_file_paths = snakemake.input["bam"]
 cell_UMI_count: Dict[BarcodeGene, Dict[bytes, int]] = {}
 logging.info("Parsing alignments")
-iteration_gap = int(1e6)
+iteration_gap = snakemake.params["iteration_gap"]
 alignment_count = 0
 read_count = 0
 selected_count = 0
@@ -98,40 +117,43 @@ aligned_count = 0
 unambiguous_count = 0
 feature_determined = 0
 
-for read in bamfile.fetch(until_eof=True):
-    alignment_count += 1
-    if alignment_count % iteration_gap == 0:
-        logging.info(f"Parsed {alignment_count} alignments")
-    if read.is_secondary or read.is_supplementary:
-        continue
-    read_count += 1
-    read_name = str(read.query_name)
-    barcode_info = fetch_barcode(read_name)
-    if barcode_info is None:
-         # Read is filtered out
-         continue
-    selected_count += 1
+for bam_file_path in bam_file_paths:
+    with pysam.AlignmentFile(bam_file_path, "rb") as bamfile:
+        logging.info(f"Parsing alignment file {bam_file_path}")
+        for read in bamfile.fetch(until_eof=True):
+            alignment_count += 1
+            if alignment_count % iteration_gap == 0:
+                logging.info(f"Parsed {alignment_count} alignments")
+            if read.is_secondary or read.is_supplementary:
+                continue
+            read_count += 1
+            read_name = str(read.query_name)
+            barcode_info = fetch_barcode(read_name)
+            if barcode_info is None:
+                # Read is filtered out
+                continue
+            selected_count += 1
 
-    if not read.is_mapped:
-        continue
-    aligned_count += 1
-    contig, gene = get_alignment_status(read)
-    if gene == "ambiguous":
-        continue
-    unambiguous_count += 1
-    if gene != "no_feature":
-        feature_determined += 1
-    
-    cell_barcode = str(barcode_info[1])
-    # UMI-tools expect the UMI to be in the form of bytes
-    cell_umi = bytes(barcode_info[0], encoding="ascii")
-    read_key = BarcodeGene(cell_barcode, gene, contig)
-    if read_key not in cell_UMI_count:
-         cell_UMI_count[read_key] = {cell_umi: 1}
-    elif cell_umi not in cell_UMI_count[read_key]:
-         cell_UMI_count[read_key][cell_umi] = 1
-    else:
-         cell_UMI_count[read_key][cell_umi] += 1
+            if not read.is_mapped:
+                continue
+            aligned_count += 1
+            contig, gene = get_alignment_status(read)
+            if gene == "ambiguous":
+                continue
+            unambiguous_count += 1
+            if gene != "no_feature":
+                feature_determined += 1
+            
+            cell_barcode = str(barcode_info[1])
+            # UMI-tools expect the UMI to be in the form of bytes
+            cell_umi = bytes(barcode_info[0], encoding="ascii")
+            read_key = BarcodeGene(cell_barcode, gene, contig)
+            if read_key not in cell_UMI_count:
+                cell_UMI_count[read_key] = {cell_umi: 1}
+            elif cell_umi not in cell_UMI_count[read_key]:
+                cell_UMI_count[read_key][cell_umi] = 1
+            else:
+                cell_UMI_count[read_key][cell_umi] += 1
 
 
 logging.info(f"Deduplicating UMIs")
@@ -141,7 +163,13 @@ with multiprocessing.Pool(n_cores) as p:
 
 logging.info(f"Preparing results")
 
-res_frame = pd.DataFrame.from_records(res_list, columns=["Cell Barcode","contig_gene","count"])
+with open(f"results/{sample}/{sample}_umi_count_table.txt", "w") as umi_file:
+    umi_file.write("Cell Barcode\tUMI\tcontig:gene\ttotal_reads\n")
+    for umi_group in res_list:
+        cell_barcode, contig_gene, _, aggregated_cluster_string = umi_group
+        umi_file.write(aggregated_cluster_string)
+
+res_frame = pd.DataFrame.from_records(((res[0], res[1], res[2]) for res in res_list), columns=["Cell Barcode","contig_gene","count"])
 
 # Note: The genomic features may be on the gene, not operon level, but we keep this naming for historical reasons
 n_operons = res_frame["count"].sum()
@@ -176,3 +204,5 @@ summary_logger.info(f"Total number of UMI groups deduplicated: {len(cell_UMI_cou
 summary_logger.info(f"Total number of unique UMIs: {n_operons}")
 summary_logger.info(f"Mean number of unique UMIs per UMI group: {mean_operons}")
 summary_logger.info(f"Max number of unique UMIs per UMI group: {max_operons}")
+
+log_handle.close()

@@ -1,3 +1,8 @@
+log_file = snakemake@log[[1]]
+log_handle  <- file(log_file, open = "w")
+sink(log_handle, append = TRUE, type = "output")
+sink(log_handle, append = TRUE, type = "message")
+
 suppressMessages({
     library(posDemux)
     library(glue)
@@ -6,10 +11,10 @@ suppressMessages({
 
 args <- commandArgs(trailingOnly = TRUE)
 
-sample <- args[[1L]]
-bc_cutoff <- as.integer(args[[2L]])
+sample <- snakemake@wildcards[["sample"]]
+bc_cutoff <- snakemake@params[["bc_cutoff"]]
 
-input_freq_table <- glue("results/{sample}/{sample}_frequency_table.txt")
+input_freq_table <- snakemake@input[[1]]
 freq_table <- read.table(file = input_freq_table, header = TRUE, sep = "\t")
 
 n_reads <- freq_table$frequency |> sum()
@@ -20,10 +25,14 @@ freq_plot <- freq_plot(freq_table, cutoff = bc_cutoff |> bc_to_freq_cutoff(freq_
 knee_plot <- knee_plot(freq_table, cutoff = bc_cutoff) + plot_title + theme_bw(base_size = 35)
 
 ggsave(
-    filename = "results/{sample}/{sample}_ReadsPerBC.pdf" |> glue(), plot = freq_plot, width = 30,
+    filename = snakemake@output[["histogram"]], plot = freq_plot, width = 30,
     height = 20, units = "cm"
 )
 ggsave(
-    filename = "results/{sample}/{sample}_kneePlot.pdf" |> glue(), plot = knee_plot, width = 30,
+    filename = snakemake@output[["knee_plot"]], plot = knee_plot, width = 30,
     height = 20, units = "cm"
 )
+
+sink(type="message")
+sink(type="output")
+close(log_handle)

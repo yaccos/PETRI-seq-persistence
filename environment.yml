@@ -1,0 +1,14 @@
+name: petrisnake
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - apptainer
+  - snakemake
+  - snakefmt
+  - r-shiny
+  - r-yaml
+  - r-shinythemes
+  - r-shinybs
+  - r-purrr
+  

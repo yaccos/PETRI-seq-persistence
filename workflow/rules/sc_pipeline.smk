@@ -1,9 +1,15 @@
+def get_lane_files_for_demultiplexing(wildcards):
+    sample = wildcards.sample
+    lanes = sample_lanes[sample]
+    template = "{results}/{sample}/{sample}_QF_{lane}_R1.fastq"
+    return [f"results/{sample}/{sample}_QF_{lane}_R1.fastq" for lane in lanes]
+
 rule demultiplex:
     input:
-        "results/{sample}/{sample}_QF_R1_all_lanes.fastq",
-        f"{barcode_dir}/BC1_5p_anchor_v2.fa",
-        f"{barcode_dir}/BC2_anchored.fa",
-        f"{barcode_dir}/BC3_anchored.fa",
+        fastq=get_lane_files_for_demultiplexing,
+        bc1=f"{barcode_dir}/BC1_5p_anchor_v2.fa",
+        bc2=f"{barcode_dir}/BC2_anchored.fa",
+        bc3=f"{barcode_dir}/BC3_anchored.fa",
     output:
         barcode_table="results/{sample}/{sample}_barcode_table.txt",
         bc_frame="results/{sample}/{sample}_bc_frame.rds",
@@ -12,8 +18,10 @@ rule demultiplex:
         chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
     log:
         "logs/{sample}/demultiplex.log"
-    shell:
-        "Rscript {script_dir}/demultiplexer.R {wildcards.sample} {params.chunk_size}  &> {log}"
+    container:
+        "docker://yaccos/posdemux:0.99.8"
+    script:
+        "../scripts/demultiplexer.R"
 
 rule create_bc_plots:
     input:
@@ -25,22 +33,26 @@ rule create_bc_plots:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"]
     log:
         "logs/{sample}/bc_plots.log"
-    shell:
-        "Rscript {script_dir}/create_bc_plots.R {wildcards.sample} {params.bc_cutoff} &> {log}"
+    container:
+        "docker://yaccos/posdemux:0.99.8"
+    script:
+        "../scripts/create_bc_plots.R"
 
 
 rule select_reads:
     input:
-        "results/{sample}/{sample}_frequency_table.txt",
-        "results/{sample}/{sample}_barcode_table.txt"
+        freq_table="results/{sample}/{sample}_frequency_table.txt",
+        barcode_table="results/{sample}/{sample}_barcode_table.txt"
     output:
-        "results/{sample}/{sample}_selected_frequency_table.txt",
-        temp("results/{sample}/{sample}_selected_barcode_table.sqlite")
+        selected_barcode_table="results/{sample}/{sample}_selected_frequency_table.txt",
+        barcode_database=temp("results/{sample}/{sample}_selected_barcode_table.sqlite")
     log: 
         "logs/{sample}/select_reads.log"
     params:
         bc_cutoff = lambda wildcards: processed_config[wildcards.sample]["bc_cutoff"],
         chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]
-    shell:
-        "Rscript {script_dir}/select_reads_to_keep.R {wildcards.sample} {params.bc_cutoff} {params.chunk_size} &> {log}"
+    container:
+        "docker://yaccos/posdemux:0.99.8"
+    script:
+        "../scripts/select_reads_to_keep.R"
         

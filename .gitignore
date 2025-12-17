@@ -5,6 +5,7 @@
 *.Rproj
 .vscode/
 workflow/scripts/__pycache__
+scripts/__pycache__
 *.swp
 *fa.sa
 *fa.pac
@@ -13,9 +14,6 @@ workflow/scripts/__pycache__
 *fa.amb
 *.pyc
 workflow/data/Pseq*
-workflow/.snakemake
-workflow/results
-workflow/logs
 workflow/data/GCA*
 workflow/data/GCF*
 *.html
@@ -23,4 +21,8 @@ workflow/data/GCF*
 nr.gz
 megan-map-*
 workflow/data/GSE141018/
-
+results
+logs
+benchmark
+.snakemake
+*.sif
