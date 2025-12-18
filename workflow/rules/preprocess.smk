@@ -4,10 +4,10 @@ rule fastqc:
     output:
         expand(
             "results/{{sample}}/qc/{{filename}}_fastqc.{format}",
-            format= ["html", "zip"]
+            format=["html", "zip"],
         ),
     log:
-        "logs/{sample}/qc/{filename}_fastqc.log"
+        "logs/{sample}/qc/{filename}_fastqc.log",
     conda:
         "../envs/fastqc.yml"
     shell:
@@ -22,23 +22,27 @@ rule quality_trim:
     output:
         forward=temp("results/{sample}/{sample}_QF_{lane}_R1.fastq"),
         reverse_seq=temp("results/{sample}/{sample}_QF_{lane}_R2.fastq"),
-    # For this task, cutadapt appears not to take advantage of more than 3 cores 
+    # For this task, cutadapt appears not to take advantage of more than 3 cores
     threads: min(3, workflow.cores)
     log:
-        "logs/{sample}/QF_{lane}.log"
+        "logs/{sample}/QF_{lane}.log",
     conda:
         "../envs/cutadapt.yml"
     shell:
         "cutadapt -q 10,10 --minimum-length 58:14 --max-n 3 --cores={threads} --pair-filter=any -o {output.forward} -p {output.reverse_seq} {input.forward} {input.reverse_seq} > {log}"
+
 
 def get_lane_files_for_merging(prefix, sample, read):
     template = "{prefix}/{sample}_QF_{lane}_{read}.fastq"
     lanes = sample_lanes[sample]
     return expand(template, lane=lanes, sample=sample, prefix=prefix, read=read)
 
+
 rule merge_R1:
     input:
-        lambda wildcards: get_lane_files_for_merging(wildcards.prefix, wildcards.sample, "R1"),
+        lambda wildcards: get_lane_files_for_merging(
+            wildcards.prefix, wildcards.sample, "R1"
+        ),
     output:
         temp("{prefix}/{sample}_QF_R1_all_lanes.fastq"),
     shell:

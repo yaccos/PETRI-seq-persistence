@@ -8,16 +8,18 @@ rule remove_xs_tags:
     shell:
         'sed "s/XS:/XG:/" {input} > {output}'
 
+
 # Convert to BAM
 rule sam_to_bam:
     input:
         "results/{sample}/{sample}_no_XS_{lane}.sam",
     output:
         temp("results/{sample}/{sample}_no_XS_{lane}.bam"),
-    conda: 
+    conda:
         "../envs/samtools.yml"
     shell:
         "samtools view -bS --uncompressed {input} -o {output}"
+
 
 # Sort before feature counting
 rule bam_sort:
@@ -25,7 +27,7 @@ rule bam_sort:
         "results/{sample}/{sample}_no_XS_{lane}.bam",
     output:
         temp("results/{sample}/{sample}_sorted_{lane}.bam"),
-    conda: 
+    conda:
         "../envs/samtools.yml"
     shell:
         "samtools sort -u {input} -o {output}"
@@ -37,12 +39,14 @@ rule index_bam:
         "{filename}.bam",
     output:
         temp("{filename}.bam.bai"),
-    conda: 
+    conda:
         "../envs/samtools.yml"
     shell:
         "samtools index {input}"
 
+
 ruleorder: feature_counts > bam_sort
+
 
 # Run featureCounts
 rule feature_counts:
@@ -59,7 +63,9 @@ rule feature_counts:
         counts_summary="logs/{sample}/{sample}_{lane}.featureCounts.txt.summary",
     params:
         feature_tag=lambda wildcards: processed_config[wildcards.sample]["feature_tag"],
-        gene_id_attribute=lambda wildcards: processed_config[wildcards.sample]["gene_id_attribute"]
+        gene_id_attribute=lambda wildcards: processed_config[wildcards.sample][
+            "gene_id_attribute"
+        ],
     conda:
         "../envs/feature_counts.yml"
     shell:
@@ -69,16 +75,23 @@ rule feature_counts:
         """
 
 
-
 def get_bam_files_for_sample(wildcards):
     sample = wildcards.sample
     lanes = sample_lanes[sample]
-    return [f"results/{sample}/{sample}_sorted_{lane}.bam.featureCounts.bam" for lane in lanes]
+    return [
+        f"results/{sample}/{sample}_sorted_{lane}.bam.featureCounts.bam"
+        for lane in lanes
+    ]
+
 
 def get_bai_files_for_sample(wildcards):
     sample = wildcards.sample
     lanes = sample_lanes[sample]
-    return [f"results/{sample}/{sample}_sorted_{lane}.bam.featureCounts.bam.bai" for lane in lanes]
+    return [
+        f"results/{sample}/{sample}_sorted_{lane}.bam.featureCounts.bam.bai"
+        for lane in lanes
+    ]
+
 
 rule count_genes:
     input:
@@ -87,15 +100,16 @@ rule count_genes:
         barcode_table="results/{sample}/{sample}_selected_barcode_table.sqlite",
     output:
         "results/{sample}/{sample}_gene_count_matrix.txt",
-        "results/{sample}/{sample}_umi_count_table.txt"
-    log: "logs/{sample}/count_genes.log"
+        "results/{sample}/{sample}_umi_count_table.txt",
+    log:
+        "logs/{sample}/count_genes.log",
     threads: workflow.cores
     params:
         # This is not the streaming chunk size and is therefore optimized differently
         # Only modify this one if you know what you are doing
         chunk_size=10,
         threshold=0,
-        iteration_gap=int(1e6)
+        iteration_gap=int(1e6),
     conda:
         "../envs/count_genes.yml"
     script:
