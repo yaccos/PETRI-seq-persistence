@@ -6,10 +6,11 @@ This is a Snakemake pipeline for the secondary computational analysis of single 
 
 # Dependencies
 
-This pipeline is only tested under Linux running on x86-64 architecture, although it might work on macOS and other CPU architectures if some work is put into dependency management. The workflow will complain, but still work if the system dependency `fuse2fs` is not installed. For running the pipeline the following dependencies are required (tested version):
+This pipeline is only tested under Linux running on x86-64 architecture, although it might work on macOS and other CPU architectures if some work is put into dependency management. The workflow will complain, but still work if the system dependency `fuse2fs` is not installed. For running the pipeline the following dependencies are required (tested versions):
 
-* Snakemake (9.14.5)
-* Apptainer (1.4.5)
+* [Snakemake](https://snakemake.github.io/) (9.14.5)
+* [conda](https://www.anaconda.com/docs/getting-started/miniconda/main) (25.7.0)
+* [Apptainer](https://apptainer.org/) (1.4.5)
 
 The configuration tool GUI is a R Shiny application with the following dependencies:
 
@@ -39,7 +40,7 @@ During startup - Warning messages:
 
 These warnings can be safely ignored, but if you still want to silence them, run `export LC_ALL=C` in your shell before running Snakemake.
 
-For using the cutoff selection tools, the `posDemux` package must be run outside the workflow. As of writing Bioconductor release 3.23 is not out yet and the package requires a minimum R version of 4.6.0 as per Bioconductor's policies. This makes the package trickier to install, but there are some options:
+For using the cutoff selection tool, the `posDemux` package must be run outside the workflow. As of writing Bioconductor release 3.23 is not out yet and the package requires a minimum R version of 4.6.0 as per Bioconductor's policies. This makes the package trickier to install, but there are some options:
 
 * Install the devel version of R which is 4.6. You may use the `rig` version manager (https://github.com/r-lib/rig) for this as it allows you to install multiple versions of R and switch between them as needed.
 * Download the sources from GitHub and manually edit the minimum version requirements to your installed R version (everything above 4.4 should work).
@@ -53,32 +54,27 @@ For the rules inside the workflow which do not use R scripts, Snakemakes automat
 
 # Running the pipeline
 
-When the barcode threshold to use is unknown, we only need to run the pipeline to the end of the demultiplexer. In that case, run
+Due to the fact that Snakemake uses Apptainer and Conda to handle the dependencies of the rules, the flag `--software-deployment-method apptainer conda` must be provided when launching the pipeline.
+
+When the barcode threshold to use is unknown, we first run the pipeline to the end of the demultiplexer. In that case, run
 `snakemake --software-deployment-method apptainer conda --cores <NUMBER_OF_CORES> determine_bc_cutoff`.
 
-Then use the posDemux package to run the interactive cutoff selection tool on the file `results/<sample>/<sample>_barcode_table.txt`.
+This will perform the demultiplexing of the forward reads and produce the following files in interest:
+
+* The barcode table at `results/<sample>/<sample>_barcode_table.txt` which contains the barcode and UMI assignments to each of the reads
+* The frequency table at `results/<sample>/<sample>_frequency_table.txt` which lists the frequency of each barcode combination in decending order (most common ones on top). This table is used by `posDemux::interactive_bc_cutoff()` to determine the barcode cutoff, this is how many of the top barcode combinations are kept.
+* The log file of the demultiplexing at `results/<sample>/demultiplex.log`. This file both serves as a progress indicator of the process and provides an informative summary of the results in the end.
+
+After the barcode cutoff is determined and entered into the config file, we are ready to run the rest of the pipeline:
 
 `snakemake --software-deployment-method apptainer conda --cores <NUMBER_OF_CORES> all`
 
-# Details of the pipeline steps
+The additional files of interest produced after the entire pipeline has finished are:
 
-## `determine_bc_cutoff`
-When running `determine_bc_cutoff`, three rules are run, `quality_trim` and `demultiplex`, and `fastqc`.
+* The selected frequency table at `results/<sample>/<sample>_selected_frequency_table.txt`. This is a truncated and renormalized version of the frequency table containing only the reads within the barcode cutoff.
+* The figures of the Knee plot and density of barcode frequencies located at `results/<sample>/<sample>_kneePlot.pdf` and `results/<sample>/<sample>_ReadsPerBC.pdf`. The dashed vertical line indicates the selected cutoff. Note that the density plot is scaled by the number of reads on the y-axis in order to make it easier to interpret. In case you are unhappy with of the plots are made, you can recreate the plots from the frequency table using `posDemux::knee_plot()` and `posDemux::freq_plot()`.
+* The gene count matrix at `results/<sample>/<sample>_gene_count_matrix.txt`. This is a tab-seperated file (remember to explicitly set `\t` as the delimiter) showing the number of detected UMIs per gene for all cells. The genes form the columns, whereas the cells form the rows.
+* The UMI count table at `results/<sample>/<sample>_umi_count_table.txt` which can be seen as a linear form of the gene count matrix. Each row contains the cell barcode, the UMI, its associated gene and how many reads were found of this UMI. 
+* The log file from the gene counting at `results/<sample>/count_genes.log` which serves both as a progress indicator and provides a summary of the gene count table.
 
-## `fastqc`
-Completly separately from the other jobs `fastqc` is run on all input files, the results of which are found in `results/<sample>/qc`.
-
-## `quality_trim`
-`quality_trim` is a `cutadapt` command filtering out low-quality reads pairs and reads being too short. The rule is invoked once per input file pair and hence gives a pair of output files per lanes. The output filenames are `results/<sample>/<sample>_QF_<lane>_R1.fastq` and `results/<sample>/<sample>_QF_<lane>_R2.fastq`. The `R1` files are fed into the demultiplexer and are typically never seen by the user, whereas the `R2` files are to be alignment and are hence kept until the `all` rules completes the alignment.
-
-## `demultiplex`
-In this step the `posDemux` package demultiplexes the forward reads for each sample. If the sample has multiple lanes, the demultiplexer sequentially streams all the lane files in the same rule invokation.
-
-## `all`
-
-The rule `all` is only supposed to be run after the barcode threshold is set in the config file. This rules completes the pipeline. If the results from `determine_bc_cutoff` exists they will be used, otherwise all rules are carried out.
-
-## `bwa_index`
-Prepares the reference genome for alignment by indexing the genome. This rule in invoked once per reference genome and the index files are created in the same directory as the reference genome.
-
-## `bwa_align`
+This repository is already prepared with an example dataset `random20000` and a corresponding pre-populated config file, meaning that the user can try the pipeline right out of the box.

@@ -12,7 +12,7 @@ rule demultiplex:
         bc3=f"{barcode_dir}/BC3_anchored.fa",
     output:
         barcode_table="results/{sample}/{sample}_barcode_table.txt",
-        bc_frame="results/{sample}/{sample}_bc_frame.rds",
+        bc_frame=temp("results/{sample}/{sample}_bc_frame.rds"),
         freq_table="results/{sample}/{sample}_frequency_table.txt"
     params:
         chunk_size = lambda wildcards: processed_config[wildcards.sample]["chunk_size"]

@@ -20,7 +20,7 @@ rule sam_to_bam:
         "samtools view -bS --uncompressed {input} -o {output}"
 
 # Sort before feature counting
-rule sam_to_bam_sort:
+rule bam_sort:
     input:
         "results/{sample}/{sample}_no_XS_{lane}.bam",
     output:
@@ -42,7 +42,7 @@ rule index_bam:
     shell:
         "samtools index {input}"
 
-ruleorder: feature_counts > sam_to_bam_sort
+ruleorder: feature_counts > bam_sort
 
 # Run featureCounts
 rule feature_counts:
