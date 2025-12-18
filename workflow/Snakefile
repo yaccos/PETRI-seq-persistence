@@ -8,10 +8,6 @@ barcode_dir = os.path.join("resources", "sc_barcodes_v2")
 
 include: "rules/handle_config.smk"
 include: "rules/common.smk"
-include: "rules/preprocess.smk"
-include: "rules/sc_pipeline.smk"
-include: "rules/align.smk"
-include: "rules/handle_sam.smk"
 
 configfile: os.path.join("config", "config.yaml")
 
@@ -20,6 +16,11 @@ processed_config = config_transform(config)
 
 sample_names = list(processed_config.keys())
 sample_lanes = {sample: processed_config[sample]["fastq"].keys() for sample in sample_names}
+
+include: "rules/preprocess.smk"
+include: "rules/sc_pipeline.smk"
+include: "rules/align.smk"
+include: "rules/handle_sam.smk"
 
 # Add this at the top of the file, before any rules
 wildcard_constraints:
@@ -55,7 +56,7 @@ rule determine_bc_cutoff:
     shell:
         """
         echo "In order to determine cutoff values, do the following:
-Copy the frequency tables (results/(sample)/(sample)_frequency_table.txt)
+Copy the frequency tables (results/<sample>/<sample>_frequency_table.txt)
 to the computer of your choice.
 In a graphical interactive R session, use read.table() with header=TRUE
 to read the frequency table(s) one by one.

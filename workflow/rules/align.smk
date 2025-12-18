@@ -1,12 +1,22 @@
+from pathlib import Path
+
 bwa_index_extensions = [".bwt", ".amb", ".pac", ".sa", ".ann"]
+
+genome_dict = {}
+
+for sample in sample_names:
+    genome_path = processed_config[sample]["genome"]
+    genome_name = Path(genome_path).stem
+    genome_dict[genome_path] = genome_name
+
 
 rule bwa_index:
     input:
-        "resources/{genome}",
+        "{genome}",
     output:
-        temp(multiext("resources/{genome}", *bwa_index_extensions)),
+        temp(multiext("{genome}", *bwa_index_extensions)),
     log:
-        "logs/{genome}_index.log"
+        lambda wildcards: f"logs/{genome_dict[wildcards.genome]}_index.log"
     conda:
         "../envs/bwa.yml"
     shell:
