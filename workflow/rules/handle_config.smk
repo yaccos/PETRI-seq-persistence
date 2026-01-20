@@ -1,63 +1,87 @@
 # The purpose of this script is to untangle the
 # Snakemake configuration file and validate its contents
 
+
 def process_sample(sample_contents, settings, sample_name):
     settings["prefix"] += sample_contents.get("prefix", "")
 
     suffix_value = sample_contents.get("suffix", settings.get("suffix", ""))
-    forward_suffix_value = sample_contents.get("forward_suffix", settings.get("forward_suffix_raw", ""))
-    reverse_suffix_value = sample_contents.get("reverse_suffix", settings.get("reverse_suffix_raw", ""))
+    forward_suffix_value = sample_contents.get(
+        "forward_suffix", settings.get("forward_suffix_raw", "")
+    )
+    reverse_suffix_value = sample_contents.get(
+        "reverse_suffix", settings.get("reverse_suffix_raw", "")
+    )
 
     settings["suffix"] = suffix_value
     settings["forward_suffix_raw"] = forward_suffix_value
     settings["reverse_suffix_raw"] = reverse_suffix_value
 
     if "reference_genome" in sample_contents:
-        settings["genome"] = sample_contents.get("prefix", "") + sample_contents["reference_genome"]
+        settings["genome"] = (
+            sample_contents.get("prefix", "") + sample_contents["reference_genome"]
+        )
     elif "genome" not in settings:
         raise ValueError(f"No reference genome specified for sample {sample_name}")
-    
+
     if "reference_annotation" in sample_contents:
-        settings["annotation"] = sample_contents.get("prefix", "") + sample_contents["reference_annotation"]
+        settings["annotation"] = (
+            sample_contents.get("prefix", "") + sample_contents["reference_annotation"]
+        )
     elif "annotation" not in settings:
         raise ValueError(f"No reference annotation specified for sample {sample_name}")
-    
+
     if "bc_cutoff" in sample_contents:
         # We don't raise an error if this is not defined anywhere
         #  because it is only needed for the latter parts of the workflow
         settings["bc_cutoff"] = sample_contents["bc_cutoff"]
-    
+
     if "feature_tag" in sample_contents:
         settings["feature_tag"] = sample_contents["feature_tag"]
     elif "feature_tag" not in settings:
         raise ValueError(f"No feature tag is defined for sample {sample_name}")
-    
+
     if "gene_id_attribute" in sample_contents:
         settings["gene_id_attribute"] = sample_contents["gene_id_attribute"]
     elif "gene_id_attribute" not in settings:
-        raise ValueError(f"No gene identifier attribute is defined for sample {sample_name}")
-    
+        raise ValueError(
+            f"No gene identifier attribute is defined for sample {sample_name}"
+        )
+
     if "streaming_chunk_size" in sample_contents:
         settings["chunk_size"] = sample_contents["streaming_chunk_size"]
     elif "chunk_size" not in settings:
-        raise ValueError(f"No chunk size for FASTQ streaming is defined for sample {sample_name}")
-    
-    settings["forward_prefix"] = settings["prefix"] + sample_contents.get("forward_prefix", "")
-    settings["reverse_prefix"] = settings["prefix"] + sample_contents.get("reverse_prefix", "")
+        raise ValueError(
+            f"No chunk size for FASTQ streaming is defined for sample {sample_name}"
+        )
+
+    settings["forward_prefix"] = settings["prefix"] + sample_contents.get(
+        "forward_prefix", ""
+    )
+    settings["reverse_prefix"] = settings["prefix"] + sample_contents.get(
+        "reverse_prefix", ""
+    )
 
     settings["forward_suffix"] = forward_suffix_value + suffix_value
     settings["reverse_suffix"] = reverse_suffix_value + suffix_value
 
     lanes = sample_contents.get("lanes", {"": ""})
     if not isinstance(lanes, dict):
-        raise ValueError("The lanes field must be a key-value of lane names and identifiers in the input files")
+        raise ValueError(
+            "The lanes field must be a key-value of lane names and identifiers in the input files"
+        )
     for lane in lanes:
-        if '_' in lane:
+        if "_" in lane:
             raise ValueError("Lane names are not allowed to have underscores")
-        
-    settings["fastq"] = {name: (settings["forward_prefix"] + ID + settings["forward_suffix"],
-                           settings["reverse_prefix"] + ID + settings["reverse_suffix"]) for name, ID in lanes.items()}
-    
+
+    settings["fastq"] = {
+        name: (
+            settings["forward_prefix"] + ID + settings["forward_suffix"],
+            settings["reverse_prefix"] + ID + settings["reverse_suffix"],
+        )
+        for name, ID in lanes.items()
+    }
+
     return settings
 
 
@@ -82,5 +106,8 @@ def config_transform(config):
         raise ValueError("The config file must specify the samples")
     if not isinstance(config["samples"], dict):
         raise ValueError("The sample names must be the keys of the sample listing")
-    sample_data = {sample_name: process_sample(contents, settings.copy(), sample_name) for sample_name, contents in config["samples"].items()}
+    sample_data = {
+        sample_name: process_sample(contents, settings.copy(), sample_name)
+        for sample_name, contents in config["samples"].items()
+    }
     return sample_data

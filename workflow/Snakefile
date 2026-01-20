@@ -6,6 +6,7 @@ from pathlib import Path
 # This must be declared before the imports to work
 barcode_dir = os.path.join("resources", "sc_barcodes_v2")
 
+
 include: "rules/handle_config.smk"
 include: "rules/common.smk"
 include: "rules/preprocess.smk"
@@ -13,18 +14,21 @@ include: "rules/sc_pipeline.smk"
 include: "rules/align.smk"
 include: "rules/handle_sam.smk"
 
+
 configfile: os.path.join("config", "config.yaml")
 
+
 processed_config = config_transform(config)
-
-
 sample_names = list(processed_config.keys())
-sample_lanes = {sample: processed_config[sample]["fastq"].keys() for sample in sample_names}
+sample_lanes = {
+    sample: processed_config[sample]["fastq"].keys() for sample in sample_names
+}
+
 
 # Add this at the top of the file, before any rules
 wildcard_constraints:
     lane="[^_]*",  # Lane identifiers are not allowed to have underscores
-    read="R[12]"
+    read="R[12]",
 
 
 fastqc_output = [expand_fastqc(sample) for sample in sample_names]
@@ -34,12 +38,15 @@ umi_table_output = expand_sample(sample_names, "umi_count_table.txt")
 bc_table_output = expand_sample(sample_names, "barcode_table.txt")
 bc_rds_output = expand_sample(sample_names, "bc_frame.rds")
 freq_table_output = expand_sample(sample_names, "frequency_table.txt")
-R2_cleaned_data = [f"results/{sample}/{sample}_QF_{lane}_R2.fastq" for sample in sample_names for lane in sample_lanes[sample]]
+R2_cleaned_data = [
+    f"results/{sample}/{sample}_QF_{lane}_R2.fastq"
+    for sample in sample_names
+    for lane in sample_lanes[sample]
+]
 
 
-
-knee_plot = expand("results/{sample}/{sample}_kneePlot.pdf", sample = sample_names)
-histogram = expand("results/{sample}/{sample}_ReadsPerBC.pdf", sample = sample_names)
+knee_plot = expand("results/{sample}/{sample}_kneePlot.pdf", sample=sample_names)
+histogram = expand("results/{sample}/{sample}_ReadsPerBC.pdf", sample=sample_names)
 
 
 # The logic here is that once R1 sequences are used for demultiplexing, they are not longer needed and can be discarded
@@ -47,15 +54,15 @@ histogram = expand("results/{sample}/{sample}_ReadsPerBC.pdf", sample = sample_n
 # R2 sequences on the other hand are used past the determination of the BC cutoff and must therefore be perserved for this purpose
 rule determine_bc_cutoff:
     input:
-       fastqc_output,
-       bc_table_output,
-       bc_rds_output,
-       freq_table_output,
-       R2_cleaned_data,
+        fastqc_output,
+        bc_table_output,
+        bc_rds_output,
+        freq_table_output,
+        R2_cleaned_data,
     shell:
         """
         echo "In order to determine cutoff values, do the following:
-Copy the frequency tables (results/(sample)/(sample)_frequency_table.txt)
+Copy the frequency tables (results/<sample>/<sample>_frequency_table.txt)
 to the computer of your choice.
 In a graphical interactive R session, use read.table() with header=TRUE
 to read the frequency table(s) one by one.
@@ -71,4 +78,4 @@ rule all:
         knee_plot,
         histogram,
         gene_matrix_output,
-        umi_table_output
+        umi_table_output,
