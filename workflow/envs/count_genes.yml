@@ -4,6 +4,4 @@ channels:
   - bioconda
 dependencies:
   - umi_tools
-  - pysam
-  - pandas
   - snakemake
