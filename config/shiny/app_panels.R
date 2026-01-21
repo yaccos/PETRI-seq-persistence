@@ -44,7 +44,7 @@ sample_configuration_panel <- tabPanel(
 
 load_yaml_panel <- tabPanel(
     "Load YAML",
-    p(strong("You can load an existing YAML for PETRI-seq here")),
+    p(strong("You can load an existing YAML for Petrisnake here")),
     textInput(inputId = "inYAML", label = "Full path to YAML file", placeholder = "eg: /path/to.yaml"),
     fileInput("file1", "...or choose YAML file to upload",
         accept = c(

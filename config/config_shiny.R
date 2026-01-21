@@ -116,7 +116,7 @@ source(file.path(config_dir, "shiny", "app_server.R"))
 ui <- fluidPage(
   # Application title
   theme = shinythemes::shinytheme("simplex"),
-  titlePanel("PETRI-seq config: Generate configuration yaml file"),
+  titlePanel("Petrisnake config: Generate configuration yaml file"),
   navlistPanel(id = "mainNav", widths = c(2, 10),
                general_option_panel,
                sample_configuration_panel,
