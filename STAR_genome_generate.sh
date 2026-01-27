@@ -1,0 +1,11 @@
+STAR \
+--runThreadN 10 \
+--runMode genomeGenerate \
+--genomeDir resources/STARsolo \
+--genomeFastaFiles resources/U00096_JE2.fa \
+--sjdbGTFfeatureExon Coding_or_RNA \
+--sjdbGTFtagExonParentGene name \
+--sjdbGTFfile  resources/U00096_JE2_rRNA.gff \
+--sjdbGTFtagExonParentTranscript name \
+--genomeSAindexNbases 10 \
+--sjdbOverhang 149 \

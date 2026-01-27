@@ -1,0 +1,19 @@
+STAR \
+  --runThreadN 10 \
+  --genomeDir resources/STARsolo \
+  --readFilesCommand zcat \
+  --readFilesIn resources/random20000/random20000_S1_L001_R2_001.fastq.gz resources/random20000/random20000_S1_L001_R1_001.fastq.gz \
+  --soloType CB_UMI_Complex \
+  --soloCBwhitelist resources/sc_barcodes_v2/BC3.fa resources/sc_barcodes_v2/BC2.fa resources/sc_barcodes_v2/BC1_5p_anchor_v2.fa  \
+  --soloCBmatchWLtype 1MM \
+  --soloCBposition 0_7_0_13 0_29_0_35 0_50_0_56 \
+  --soloUMIposition 0_0_0_6 \
+  --soloFeatures GeneFull \
+  --sjdbGTFfile resources/U00096_JE2_rRNA.gff \
+  --sjdbGTFfeatureExon Coding_or_RNA \
+  --sjdbGTFtagExonParentGene name \
+  --soloStrand Unstranded \
+  --soloCellFilter None \
+  --soloCellReadStats Standard \
+  --outFileNamePrefix results/STARsolo/EC_3h_deep_L1_ \
+  --
